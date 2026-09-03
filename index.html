@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NibbleSpot 🍕 Find & Save Eats with Maps</title>
+  <title>NibbleSpot 🍕 Find, Map & Reserve Eats</title>
   <style>
     :root {
       --bg: #fffbf0;
       --primary: #ff5252;
       --secondary: #ffbe0b;
       --accent: #3a86ff;
+      --ai-purple: #8338ec;
+      --opentable-red: #da3743;
       --dark: #2b2d42;
       --card-bg: #ffffff;
       --radius: 16px;
@@ -28,13 +30,14 @@
       background-color: var(--bg);
       color: var(--dark);
       padding: 2rem 1rem;
-      max-width: 1200px;
+      max-width: 1250px;
       margin: 0 auto;
     }
 
     header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
     }
 
     header h1 {
@@ -43,12 +46,12 @@
       text-shadow: 2px 2px 0px var(--secondary);
     }
 
-    /* Search Container */
+    /* Top Action Bar & Search */
     .search-container {
       display: flex;
       justify-content: center;
       gap: 10px;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
       flex-wrap: wrap;
     }
 
@@ -57,15 +60,9 @@
       font-size: 1rem;
       border: 3px solid var(--dark);
       border-radius: var(--radius);
-      width: 280px;
+      width: 260px;
       outline: none;
       box-shadow: 4px 4px 0px var(--dark);
-      transition: transform 0.1s;
-    }
-
-    .search-container input:focus {
-      transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0px var(--dark);
     }
 
     .btn {
@@ -79,12 +76,13 @@
       cursor: pointer;
       box-shadow: 4px 4px 0px var(--dark);
       transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .btn-geo {
-      background: var(--accent);
-      color: #fff;
-    }
+    .btn-geo { background: var(--accent); color: #fff; }
+    .btn-ai { background: var(--ai-purple); color: #fff; }
 
     .btn:hover {
       transform: translate(-2px, -2px);
@@ -103,14 +101,14 @@
       gap: 2rem;
     }
 
-    @media (max-width: 850px) {
+    @media (max-width: 900px) {
       .content-grid {
         grid-template-columns: 1fr;
       }
     }
 
     .section-title {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
@@ -120,7 +118,7 @@
     /* Cards Grid */
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1.5rem;
       margin-bottom: 1.5rem;
     }
@@ -138,9 +136,7 @@
       transition: transform 0.2s ease;
     }
 
-    .card:hover {
-      transform: translateY(-5px);
-    }
+    .card:hover { transform: translateY(-4px); }
 
     .card-tag {
       position: absolute;
@@ -155,100 +151,147 @@
       border: 2px solid var(--dark);
     }
 
-    .card h3 {
-      margin-bottom: 0.3rem;
-      font-size: 1.2rem;
+    .rec-score {
+      display: inline-block;
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 2px solid var(--dark);
+      font-weight: bold;
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 8px;
+      margin: 6px 0 10px 0;
     }
 
-    .card p {
-      color: #666;
-      font-size: 0.9rem;
-      margin-bottom: 0.8rem;
+    .card h3 { font-size: 1.2rem; margin-bottom: 2px; }
+    .card p { color: #555; font-size: 0.88rem; }
+
+    /* Action Links & Buttons */
+    .card-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    /* Map Link Buttons */
-    .map-links {
+    .action-row {
       display: flex;
       gap: 6px;
-      margin-top: 8px;
       flex-wrap: wrap;
     }
 
-    .map-btn {
-      display: inline-block;
-      padding: 4px 8px;
+    .link-btn {
+      padding: 5px 10px;
       font-size: 0.75rem;
       font-weight: bold;
       text-decoration: none;
       border: 2px solid var(--dark);
       border-radius: 8px;
       color: white;
-      transition: opacity 0.2s;
+      text-align: center;
+      flex: 1;
+      white-space: nowrap;
     }
 
-    .map-btn-google {
-      background-color: var(--google-green);
-    }
-
-    .map-btn-apple {
-      background-color: var(--apple-blue);
-    }
-
-    .map-btn:hover {
-      opacity: 0.85;
-    }
+    .btn-opentable { background-color: var(--opentable-red); }
+    .btn-menu { background-color: var(--secondary); color: var(--dark); }
+    .btn-google { background-color: var(--google-green); }
+    .btn-apple { background-color: var(--apple-blue); }
 
     .card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-top: 1rem;
+      padding-top: 0.8rem;
+      border-top: 2px dashed #eee;
     }
 
     .save-btn {
       background: #fff;
       border: 2px solid var(--dark);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       cursor: pointer;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.2s;
     }
 
-    .save-btn:hover {
-      transform: scale(1.15);
+    .save-btn.saved { background: var(--primary); color: #fff; }
+
+    /* AI Widget Panel */
+    .ai-panel {
+      background: #f3e8ff;
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      box-shadow: 6px 6px 0px var(--dark);
+      margin-bottom: 1.5rem;
+      display: none;
     }
 
-    .save-btn.saved {
-      background: var(--primary);
-      color: #fff;
+    .ai-panel.active { display: block; }
+
+    .ai-chat-box {
+      background: white;
+      border: 2px solid var(--dark);
+      border-radius: 12px;
+      padding: 10px;
+      min-height: 80px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
     }
 
-    /* Load More Area */
-    .load-more-container {
-      text-align: center;
-      margin-top: 1rem;
+    .ai-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
-    /* Saved Panel & Tabs */
+    .chip {
+      background: white;
+      border: 2px solid var(--dark);
+      border-radius: 16px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .chip:hover { background: var(--secondary); }
+
+    .ai-input-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .ai-input-group input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 2px solid var(--dark);
+      border-radius: 10px;
+    }
+
+    /* Saved Sidebar */
     .saved-panel {
       background: #fff;
       border: 3px solid var(--dark);
       border-radius: var(--radius);
-      padding: 1.5rem;
+      padding: 1.2rem;
       box-shadow: 6px 6px 0px var(--dark);
-      height: fit-content;
     }
 
     .tabs-container {
       display: flex;
       gap: 6px;
       overflow-x: auto;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
       margin-bottom: 1rem;
       border-bottom: 2px solid #eee;
     }
@@ -257,23 +300,16 @@
       background: var(--bg);
       border: 2px solid var(--dark);
       border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 0.85rem;
+      padding: 4px 10px;
+      font-size: 0.8rem;
       font-weight: bold;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s;
     }
 
-    .tab-btn.active {
-      background: var(--primary);
-      color: #fff;
-    }
+    .tab-btn.active { background: var(--primary); color: #fff; }
 
-    .saved-list {
-      list-style: none;
-    }
-
+    .saved-list { list-style: none; }
     .saved-item {
       display: flex;
       justify-content: space-between;
@@ -282,45 +318,53 @@
       border-bottom: 2px dashed #eee;
     }
 
-    .saved-item-details {
-      max-width: 75%;
-    }
-
-    .saved-item:last-child {
-      border-bottom: none;
-    }
-
-    .remove-btn {
-      background: none;
-      border: none;
-      color: var(--primary);
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 1rem;
-    }
+    .remove-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>NibbleSpot</h1>
-    <p>Discover local bites & map them with Google or Apple Maps!</p>
+    <p>Discover, Map, Reserve & Get AI Foodie Recommendations!</p>
   </header>
 
   <div class="search-container">
     <input type="text" id="locationInput" placeholder="Enter city or neighborhood..." value="Hollywood, FL">
     <button class="btn" onclick="searchRestaurants()">Find Eats!</button>
     <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
+    <button class="btn btn-ai" onclick="toggleAIPanel()">🤖 NibbleAI</button>
+  </div>
+
+  <div class="ai-panel" id="aiPanel">
+    <h3 style="margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
+      ✨ NibbleAI Assistant
+    </h3>
+    <p style="font-size: 0.85rem; color: #444; margin-bottom: 8px;">Ask for custom dish recommendations or dining vibes:</p>
+
+    <div class="ai-chips">
+      <span class="chip" onclick="askAI('What is the best dish to order in Hollywood, FL?')">🍝 Top Dish Recs</span>
+      <span class="chip" onclick="askAI('Which spot has the highest recommendation score?')">🔥 Most Recommended</span>
+      <span class="chip" onclick="askAI('Show romantic date night spots with OpenTable reservations')">🍷 Date Night</span>
+      <span class="chip" onclick="askAI('Find family friendly places with good menus')">👨‍👩‍👧 Family Friendly</span>
+    </div>
+
+    <div class="ai-chat-box" id="aiChatBox">
+      🤖 <em>"Hi! Tell me what you're craving or pick a quick suggestion above."</em>
+    </div>
+
+    <div class="ai-input-group">
+      <input type="text" id="aiPrompt" placeholder="e.g. Find me spicy ramen or seafood with outdoor seating...">
+      <button class="btn btn-ai" style="padding: 6px 12px; font-size: 0.85rem;" onclick="sendCustomAIPrompt()">Ask AI</button>
+    </div>
   </div>
 
   <div class="content-grid">
     <div>
       <h2 class="section-title">
-        📍 Spots in <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span> 
-        (<span id="resultCount">0</span>)
+        📍 Spots in <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span>
       </h2>
       <div class="results-grid" id="resultsContainer"></div>
-      <div class="load-more-container">
+      <div style="text-align: center; margin-top: 1rem;">
         <button class="btn" id="loadMoreBtn" style="display: none;" onclick="loadMore()">✨ Load More Eats</button>
       </div>
     </div>
@@ -335,27 +379,20 @@
   <script>
     const localDatabase = {
       "Hollywood, FL": [
-        { name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", address: "2001 Harrison St", price: "$$" },
-        { name: "LEMONICA", cuisine: "Mediterranean / Diner 🥙", rating: "4.8", address: "1817 N Young Cir", price: "$$" },
-        { name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", address: "1928 Hollywood Blvd", price: "$$$" },
-        { name: "WHY NOT?", cuisine: "Casual Dining 🍔", rating: "4.7", address: "600 N Surf Rd #6", price: "$" },
-        { name: "OCEAN GRILL & BAR", cuisine: "Oceanfront Grill 🥩", rating: "4.7", address: "707 N Broadwalk", price: "$$$" },
-        { name: "GG's Waterfront", cuisine: "Seafood & Steak 🍷", rating: "4.6", address: "606 N Ocean Dr", price: "$$$" },
-        { name: "Billy's Stone Crab", cuisine: "Seafood / Waterfront 🦀", rating: "4.5", address: "400 N Ocean Dr", price: "$$$$" },
-        { name: "Le Tub Saloon", cuisine: "Burgers & Brews 🍔", rating: "4.4", address: "1100 N Ocean Dr", price: "$$" },
-        { name: "Taco Beach Shack", cuisine: "Tacos & Burritos 🌮", rating: "4.6", address: "334 Arizona St", price: "$" },
-        { name: "JWB Prime Steak and Seafood", cuisine: "Fine Dining 🍷", rating: "4.7", address: "1111 N Ocean Dr", price: "$$$$" },
-        { name: "Krakatoa Indonesian Cuisine", cuisine: "Indonesian 🍲", rating: "4.8", address: "1910 Hollywood Blvd", price: "$$" },
-        { name: "The Greek Joint", cuisine: "Greek & Mediterranean 🥙", rating: "4.6", address: "1925 Hollywood Blvd", price: "$$" },
-        { name: "Florio's Grill & Cafe", cuisine: "Italian / Pizza 🍕", rating: "4.5", address: "2000 Hollywood Blvd", price: "$$" },
-        { name: "Sardelli Italian Steakhouse", cuisine: "Italian / Steakhouse 🥩", rating: "4.8", address: "331 Van Buren St", price: "$$$$" },
-        { name: "Margaritaville Restaurant", cuisine: "American / Bar 🍹", rating: "4.3", address: "1111 N Ocean Dr", price: "$$$" }
+        { name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$" },
+        { name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$" },
+        { name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$" },
+        { name: "WHY NOT?", cuisine: "Casual Dining 🍔", rating: "4.7", recScore: "94%", address: "600 N Surf Rd #6", price: "$" },
+        { name: "OCEAN GRILL & BAR", cuisine: "Oceanfront Grill 🥩", rating: "4.7", recScore: "95%", address: "707 N Broadwalk", price: "$$$" },
+        { name: "GG's Waterfront", cuisine: "Seafood & Steak 🍷", rating: "4.6", recScore: "93%", address: "606 N Ocean Dr", price: "$$$" },
+        { name: "Billy's Stone Crab", cuisine: "Seafood 🦀", rating: "4.5", recScore: "91%", address: "400 N Ocean Dr", price: "$$$$" },
+        { name: "Taco Beach Shack", cuisine: "Tacos 🌮", rating: "4.6", recScore: "92%", address: "334 Arizona St", price: "$" }
       ]
     };
 
     const mockDb = {
-      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bakery 🥐", "Thai 🍛", "BBQ 🍖", "Poke 🥗"],
-      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet", "Bistro", "Little", "Rustic", "Fire &"]
+      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bakery 🥐", "Thai 🍛"],
+      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
     };
 
     let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
@@ -367,15 +404,21 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    // Direct Integration Links
+    function getOpenTableUrl(name, location) {
+      return `https://www.opentable.com/s?term=${encodeURIComponent(name + ' ' + location)}`;
+    }
+
+    function getMenuUrl(name, location) {
+      return `https://www.google.com/search?q=${encodeURIComponent(name + ' ' + location + ' menu options items')}`;
+    }
+
     function getGoogleMapsUrl(name, address, location) {
-      const q = encodeURIComponent(`${name}, ${address || ''}, ${location}`);
-      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+      return `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(name + ', ' + (address || '') + ', ' + location)}`;
     }
 
     function getAppleMapsUrl(name, address, location) {
-      const q = encodeURIComponent(name);
-      const addr = encodeURIComponent(`${address || ''} ${location}`);
-      return `https://maps.apple.com/?q=${q}&address=${addr}`;
+      return `https://maps.apple.com/?q=${encodeURIComponent(name)}&address=${encodeURIComponent((address || '') + ' ' + location)}`;
     }
 
     function generateMockData(location) {
@@ -385,23 +428,24 @@
           name: item.name,
           cuisine: item.cuisine,
           rating: item.rating,
-          price: item.price || "$$",
+          recScore: item.recScore,
+          price: item.price,
           address: item.address,
           location: location
         }));
       }
 
-      // Generate 18 items for searched locations
-      return Array.from({ length: 18 }, (_, i) => {
+      return Array.from({ length: 12 }, (_, i) => {
         const cuisine = getRandomItem(mockDb.cuisines);
         const name = `${getRandomItem(mockDb.names)} ${cuisine.split(' ')[0]}`;
         return {
           id: `${location.toLowerCase().replace(/\s+/g, '-')}-${i}-${Date.now()}`,
           name: name,
           cuisine: cuisine,
-          rating: (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1),
+          rating: (Math.random() * (5.0 - 4.1) + 4.1).toFixed(1),
+          recScore: `${Math.floor(Math.random() * (99 - 88) + 88)}%`,
           price: "$".repeat(Math.floor(Math.random() * 3) + 1),
-          address: `${100 + i * 14} Main St`,
+          address: `${100 + i * 12} Main St`,
           location: location
         };
       });
@@ -411,7 +455,7 @@
       const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
       document.getElementById('currentLoc').innerText = loc;
       currentResults = generateMockData(loc);
-      visibleCount = 6; // Reset view batch count
+      visibleCount = 6;
       renderResults();
     }
 
@@ -420,36 +464,59 @@
       renderResults();
     }
 
+    function toggleAIPanel() {
+      const panel = document.getElementById('aiPanel');
+      panel.classList.toggle('active');
+    }
+
+    function askAI(question) {
+      const chatBox = document.getElementById('aiChatBox');
+      const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
+      const topPick = currentResults[0] || { name: "Thanks To Harrison", cuisine: "Cafe", recScore: "99%" };
+
+      chatBox.innerHTML = `💬 <strong>You:</strong> ${question}<br><br>`;
+      
+      setTimeout(() => {
+        if (question.includes('highest recommendation')) {
+          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Based on customer ratings in <strong>${loc}</strong>, <strong>${topPick.name}</strong> is top recommended at <strong>${topPick.recScore} match</strong>!`;
+        } else if (question.includes('best dish')) {
+          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> In ${loc}, local favorites include Fresh Seafood Platter at <em>GG's Waterfront</em> or Artisanal Tacos at <em>Taco Beach Shack</em>!`;
+        } else if (question.includes('Date Night')) {
+          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> For a date night in ${loc}, I recommend reserving a table on OpenTable at <strong>GG's Waterfront</strong> or <strong>Tótem Beach Resto bar</strong>!`;
+        } else {
+          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Great pick! Check out the active menu links and reserve directly via OpenTable for ${topPick.name} in ${loc}.`;
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 300);
+    }
+
+    function sendCustomAIPrompt() {
+      const input = document.getElementById('aiPrompt');
+      if (input.value.trim()) {
+        askAI(input.value.trim());
+        input.value = '';
+      }
+    }
+
     function useMyLocation() {
       const geoBtn = document.getElementById('geoBtn');
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
-        return;
-      }
-
-      geoBtn.innerText = "⏳ Locating...";
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await res.json();
-            const city = data.address.city || data.address.town || data.address.suburb || "My Area";
-            document.getElementById('locationInput').value = city;
-            searchRestaurants();
-          } catch (e) {
-            document.getElementById('locationInput').value = "My Area";
-            searchRestaurants();
-          } finally {
-            geoBtn.innerText = "📍 Locate Me";
-          }
-        },
-        () => {
-          alert('Unable to retrieve location.');
+      if (!navigator.geolocation) return alert('Geolocation not supported');
+      
+      geoBtn.innerText = "⏳...";
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+          const data = await res.json();
+          const city = data.address.city || data.address.town || "My Area";
+          document.getElementById('locationInput').value = city;
+          searchRestaurants();
+        } catch {
+          document.getElementById('locationInput').value = "My Area";
+          searchRestaurants();
+        } finally {
           geoBtn.innerText = "📍 Locate Me";
         }
-      );
+      });
     }
 
     function toggleSave(id) {
@@ -457,30 +524,30 @@
       if (index > -1) {
         savedSpots.splice(index, 1);
       } else {
-        const itemToSave = currentResults.find(r => r.id === id) || savedSpots.find(s => s.id === id);
-        if (itemToSave) savedSpots.push(itemToSave);
+        const item = currentResults.find(r => r.id === id) || savedSpots.find(s => s.id === id);
+        if (item) savedSpots.push(item);
       }
       localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
       renderResults();
       renderSaved();
     }
 
-    function setTab(locationName) {
-      activeTab = locationName;
+    function setTab(loc) {
+      activeTab = loc;
       renderSaved();
     }
 
     function renderResults() {
       const container = document.getElementById('resultsContainer');
       const loadMoreBtn = document.getElementById('loadMoreBtn');
-      document.getElementById('resultCount').innerText = currentResults.length;
-
       container.innerHTML = '';
 
       const itemsToShow = currentResults.slice(0, visibleCount);
 
       itemsToShow.forEach(spot => {
         const isSaved = savedSpots.some(s => s.id === spot.id);
+        const otUrl = getOpenTableUrl(spot.name, spot.location);
+        const menuUrl = getMenuUrl(spot.name, spot.location);
         const gUrl = getGoogleMapsUrl(spot.name, spot.address, spot.location);
         const aUrl = getAppleMapsUrl(spot.name, spot.address, spot.location);
 
@@ -491,13 +558,22 @@
           <div>
             <h3>${spot.name}</h3>
             <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
-            <div class="map-links">
-              <a href="${gUrl}" target="_blank" rel="noopener" class="map-btn map-btn-google">🗺️ Google Maps</a>
-              <a href="${aUrl}" target="_blank" rel="noopener" class="map-btn map-btn-apple">🍏 Apple Maps</a>
+            <span class="rec-score">🔥 ${spot.recScore} Recommended</span>
+
+            <div class="card-actions">
+              <div class="action-row">
+                <a href="${otUrl}" target="_blank" class="link-btn btn-opentable">🍷 OpenTable</a>
+                <a href="${menuUrl}" target="_blank" class="link-btn btn-menu">📜 View Menu</a>
+              </div>
+              <div class="action-row">
+                <a href="${gUrl}" target="_blank" class="link-btn btn-google">🗺️ Google</a>
+                <a href="${aUrl}" target="_blank" class="link-btn btn-apple">🍏 Apple</a>
+              </div>
             </div>
           </div>
+
           <div class="card-footer">
-            <small style="color:#777">📍 ${spot.address || spot.location}</small>
+            <small style="color:#666">📍 ${spot.address || spot.location}</small>
             <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${spot.id}')">
               ${isSaved ? '❤️' : '🤍'}
             </button>
@@ -506,11 +582,7 @@
         container.appendChild(card);
       });
 
-      if (visibleCount < currentResults.length) {
-        loadMoreBtn.style.display = 'inline-block';
-      } else {
-        loadMoreBtn.style.display = 'none';
-      }
+      loadMoreBtn.style.display = visibleCount < currentResults.length ? 'inline-block' : 'none';
     }
 
     function renderSaved() {
@@ -520,39 +592,30 @@
 
       if (savedSpots.length === 0) {
         tabsContainer.innerHTML = '';
-        savedContainer.innerHTML = `<p style="color: #888; font-size: 0.9rem;">No saved spots yet. Heart a place to get started!</p>`;
+        savedContainer.innerHTML = `<p style="color: #888; font-size: 0.85rem;">No saved places yet.</p>`;
         return;
       }
 
       const locations = ['All', ...new Set(savedSpots.map(s => s.location))];
-      if (!locations.includes(activeTab)) {
-        activeTab = 'All';
-      }
+      if (!locations.includes(activeTab)) activeTab = 'All';
 
       tabsContainer.innerHTML = locations.map(loc => `
-        <button class="tab-btn ${loc === activeTab ? 'active' : ''}" onclick="setTab('${loc}')">
-          ${loc}
-        </button>
+        <button class="tab-btn ${loc === activeTab ? 'active' : ''}" onclick="setTab('${loc}')">${loc}</button>
       `).join('');
 
-      const filteredSpots = activeTab === 'All' 
-        ? savedSpots 
-        : savedSpots.filter(s => s.location === activeTab);
+      const filtered = activeTab === 'All' ? savedSpots : savedSpots.filter(s => s.location === activeTab);
 
       savedContainer.innerHTML = '';
-      filteredSpots.forEach(spot => {
-        const gUrl = getGoogleMapsUrl(spot.name, spot.address, spot.location);
-        const aUrl = getAppleMapsUrl(spot.name, spot.address, spot.location);
-
+      filtered.forEach(spot => {
+        const otUrl = getOpenTableUrl(spot.name, spot.location);
         const li = document.createElement('li');
         li.className = 'saved-item';
         li.innerHTML = `
-          <div class="saved-item-details">
+          <div>
             <strong>${spot.name}</strong>
             <br><small style="color:#666">${spot.cuisine} • 📍 ${spot.location}</small>
-            <div class="map-links">
-              <a href="${gUrl}" target="_blank" rel="noopener" class="map-btn map-btn-google">Google Maps</a>
-              <a href="${aUrl}" target="_blank" rel="noopener" class="map-btn map-btn-apple">Apple Maps</a>
+            <div style="margin-top: 4px;">
+              <a href="${otUrl}" target="_blank" style="font-size:0.75rem; color:var(--opentable-red); font-weight:bold;">Book on OpenTable 🍷</a>
             </div>
           </div>
           <button class="remove-btn" onclick="toggleSave('${spot.id}')">✖</button>
