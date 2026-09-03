@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NibbleSpot 🍕 Find & Save Nearby Eats</title>
+  <style>
+    :root {
+      --bg: #fffbf0;
+      --primary: #ff5252;
+      --secondary: #ffbe0b;
+      --accent: #3a86ff;
+      --dark: #2b2d42;
+      --card-bg: #ffffff;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--dark);
+      padding: 2rem 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      color: var(--primary);
+      text-shadow: 2px 2px 0px var(--secondary);
+    }
+
+    /* Search Bar */
+    .search-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .search-container input {
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      width: 300px;
+      outline: none;
+      box-shadow: 4px 4px 0px var(--dark);
+      transition: transform 0.1s;
+    }
+
+    .search-container input:focus {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--dark);
+    }
+
+    .btn {
+      background: var(--secondary);
+      color: var(--dark);
+      font-weight: bold;
+      border: 3px solid var(--dark);
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 4px 4px 0px var(--dark);
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--dark);
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px var(--dark);
+    }
+
+    /* Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Cards Grid */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      box-shadow: 5px 5px 0px var(--dark);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-tag {
+      position: absolute;
+      top: -12px;
+      right: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 2px solid var(--dark);
+    }
+
+    .card h3 {
+      margin-bottom: 0.3rem;
+      font-size: 1.2rem;
+    }
+
+    .card p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+    }
+
+    .save-btn {
+      background: #fff;
+      border: 2px solid var(--dark);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s;
+    }
+
+    .save-btn:hover {
+      transform: scale(1.15);
+    }
+
+    .save-btn.saved {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Saved Sidebar */
+    .saved-panel {
+      background: #fff;
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 6px 6px 0px var(--dark);
+      height: fit-content;
+    }
+
+    .saved-list {
+      list-style: none;
+    }
+
+    .saved-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 0;
+      border-bottom: 2px dashed #eee;
+    }
+
+    .saved-item:last-child {
+      border-bottom: none;
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1> NibbleSpot</h1>
+    <p>Discover & collection your favorite local bites!</p>
+  </header>
+
+  <div class="search-container">
+    <input type="text" id="locationInput" placeholder="Enter neighborhood or city..." value="Downtown">
+    <button class="btn" onclick="searchRestaurants()">Find Eats!</button>
+  </div>
+
+  <div class="content-grid">
+    <div>
+      <h2 class="section-title">📍 Nearby Spots in <span id="currentLoc" style="color:var(--primary)">Downtown</span></h2>
+      <div class="results-grid" id="resultsContainer"></div>
+    </div>
+
+    <div class="saved-panel">
+      <h2 class="section-title">⭐ Saved Places (<span id="savedCount">0</span>)</h2>
+      <ul class="saved-list" id="savedContainer">
+        <p style="color: #888; font-size: 0.9rem;">No favorites saved yet. Click the heart on a spot!</p>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Sample dataset generator
+    const mockDb = {
+      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bakery 🥐"],
+      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
+    };
+
+    let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
+    let currentResults = [];
+
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateMockData(location) {
+      return Array.from({ length: 6 }, (_, i) => {
+        const cuisine = getRandomItem(mockDb.cuisines);
+        const name = `${getRandomItem(mockDb.names)} ${cuisine.split(' ')[0]}`;
+        return {
+          id: `${location.toLowerCase()}-${i}-${Date.now()}`,
+          name: name,
+          cuisine: cuisine,
+          rating: (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1),
+          price: "$".repeat(Math.floor(Math.random() * 3) + 1),
+          location: location
+        };
+      });
+    }
+
+    function searchRestaurants() {
+      const loc = document.getElementById('locationInput').value.trim() || 'Nearby';
+      document.getElementById('currentLoc').innerText = loc;
+      currentResults = generateMockData(loc);
+      renderResults();
+    }
+
+    function toggleSave(id) {
+      const index = savedSpots.findIndex(item => item.id === id);
+      if (index > -1) {
+        savedSpots.splice(index, 1);
+      } else {
+        const itemToSave = currentResults.find(r => r.id === id) || savedSpots.find(s => s.id === id);
+        if (itemToSave) savedSpots.push(itemToSave);
+      }
+      localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
+      renderResults();
+      renderSaved();
+    }
+
+    function renderResults() {
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '';
+
+      currentResults.forEach(spot => {
+        const isSaved = savedSpots.some(s => s.id === spot.id);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <span class="card-tag">${spot.price}</span>
+          <div>
+            <h3>${spot.name}</h3>
+            <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
+          </div>
+          <div class="card-footer">
+            <small style="color:#777">📍 ${spot.location}</small>
+            <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${spot.id}')">
+              ${isSaved ? '❤️' : '🤍'}
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderSaved() {
+      const container = document.getElementById('savedContainer');
+      document.getElementById('savedCount').innerText = savedSpots.length;
+
+      if (savedSpots.length === 0) {
+        container.innerHTML = `<p style="color: #888; font-size: 0.9rem;">No favorites saved yet. Click the heart on a spot!</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      savedSpots.forEach(spot => {
+        const li = document.createElement('li');
+        li.className = 'saved-item';
+        li.innerHTML = `
+          <div>
+            <strong>${spot.name}</strong>
+            <br><small style="color:#666">${spot.cuisine} (${spot.location})</small>
+          </div>
+          <button class="remove-btn" onclick="toggleSave('${spot.id}')">✖</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    // Initial render
+    searchRestaurants();
+    renderSaved();
+  </script>
+</body>
+</html>
