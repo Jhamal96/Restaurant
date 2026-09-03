@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NibbleSpot 🍕 Find & Save Nearby Eats</title>
+  <title>NibbleSpot 🍕 Find & Save Eats with Maps</title>
   <style>
     :root {
       --bg: #fffbf0;
@@ -13,6 +13,8 @@
       --dark: #2b2d42;
       --card-bg: #ffffff;
       --radius: 16px;
+      --apple-blue: #007aff;
+      --google-green: #34a853;
     }
 
     * {
@@ -41,7 +43,7 @@
       text-shadow: 2px 2px 0px var(--secondary);
     }
 
-    /* Search Bar & Buttons */
+    /* Search Container */
     .search-container {
       display: flex;
       justify-content: center;
@@ -94,7 +96,7 @@
       box-shadow: 2px 2px 0px var(--dark);
     }
 
-    /* Layout */
+    /* Content Layout */
     .content-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -115,10 +117,10 @@
       gap: 8px;
     }
 
-    /* Results Cards Grid */
+    /* Cards Grid */
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 1.5rem;
     }
 
@@ -163,6 +165,38 @@
       margin-bottom: 0.8rem;
     }
 
+    /* Map Link Buttons */
+    .map-links {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .map-btn {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-decoration: none;
+      border: 2px solid var(--dark);
+      border-radius: 8px;
+      color: white;
+      transition: opacity 0.2s;
+    }
+
+    .map-btn-google {
+      background-color: var(--google-green);
+    }
+
+    .map-btn-apple {
+      background-color: var(--apple-blue);
+    }
+
+    .map-btn:hover {
+      opacity: 0.85;
+    }
+
     .card-footer {
       display: flex;
       justify-content: space-between;
@@ -193,7 +227,7 @@
       color: #fff;
     }
 
-    /* Saved Sidebar & Tabs */
+    /* Saved Panel & Tabs */
     .saved-panel {
       background: #fff;
       border: 3px solid var(--dark);
@@ -241,6 +275,10 @@
       border-bottom: 2px dashed #eee;
     }
 
+    .saved-item-details {
+      max-width: 75%;
+    }
+
     .saved-item:last-child {
       border-bottom: none;
     }
@@ -259,18 +297,18 @@
 
   <header>
     <h1>NibbleSpot</h1>
-    <p>Discover & collect your favorite local bites!</p>
+    <p>Discover local bites & map them with Google or Apple Maps!</p>
   </header>
 
   <div class="search-container">
-    <input type="text" id="locationInput" placeholder="Enter city or neighborhood..." value="Downtown">
+    <input type="text" id="locationInput" placeholder="Enter city or neighborhood..." value="Hollywood, FL">
     <button class="btn" onclick="searchRestaurants()">Find Eats!</button>
     <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
   </div>
 
   <div class="content-grid">
     <div>
-      <h2 class="section-title">📍 Nearby Spots in <span id="currentLoc" style="color:var(--primary)">Downtown</span></h2>
+      <h2 class="section-title">📍 Spots in <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span></h2>
       <div class="results-grid" id="resultsContainer"></div>
     </div>
 
@@ -282,6 +320,17 @@
   </div>
 
   <script>
+    // Real map location data pre-populated
+    const localDatabase = {
+      "Hollywood, FL": [
+        { name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", address: "2001 Harrison St" },
+        { name: "LEMONICA", cuisine: "Mediterranean / Diner 🥙", rating: "4.8", address: "1817 N Young Cir" },
+        { name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", address: "1928 Hollywood Blvd" },
+        { name: "WHY NOT?", cuisine: "Casual Dining 🍔", rating: "4.7", address: "600 N Surf Rd #6" },
+        { name: "OCEAN GRILL & BAR by HOLLYWOOD BEACH", cuisine: "Oceanfront Grill 🥩", rating: "4.7", address: "707 N Broadwalk" }
+      ]
+    };
+
     const mockDb = {
       cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bakery 🥐"],
       names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
@@ -295,8 +344,33 @@
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
+    // Google Maps Universal Link generator
+    function getGoogleMapsUrl(name, address, location) {
+      const q = encodeURIComponent(`${name}, ${address || ''}, ${location}`);
+      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+    }
+
+    // Apple Maps Universal Link generator
+    function getAppleMapsUrl(name, address, location) {
+      const q = encodeURIComponent(name);
+      const addr = encodeURIComponent(`${address || ''} ${location}`);
+      return `https://maps.apple.com/?q=${q}&address=${addr}`;
+    }
+
     function generateMockData(location) {
-      return Array.from({ length: 6 }, (_, i) => {
+      if (localDatabase[location]) {
+        return localDatabase[location].map((item, i) => ({
+          id: `${location.toLowerCase().replace(/\s+/g, '-')}-${i}`,
+          name: item.name,
+          cuisine: item.cuisine,
+          rating: item.rating,
+          price: "$$",
+          address: item.address,
+          location: location
+        }));
+      }
+
+      return Array.from({ length: 5 }, (_, i) => {
         const cuisine = getRandomItem(mockDb.cuisines);
         const name = `${getRandomItem(mockDb.names)} ${cuisine.split(' ')[0]}`;
         return {
@@ -305,13 +379,14 @@
           cuisine: cuisine,
           rating: (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1),
           price: "$".repeat(Math.floor(Math.random() * 3) + 1),
+          address: `${100 + i * 12} Main St`,
           location: location
         };
       });
     }
 
     function searchRestaurants() {
-      const loc = document.getElementById('locationInput').value.trim() || 'Nearby';
+      const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
       document.getElementById('currentLoc').innerText = loc;
       currentResults = generateMockData(loc);
       renderResults();
@@ -330,7 +405,6 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           try {
-            // Free OpenStreetMap reverse geocoding API
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
             const data = await res.json();
             const city = data.address.city || data.address.town || data.address.suburb || "My Area";
@@ -374,6 +448,9 @@
 
       currentResults.forEach(spot => {
         const isSaved = savedSpots.some(s => s.id === spot.id);
+        const gUrl = getGoogleMapsUrl(spot.name, spot.address, spot.location);
+        const aUrl = getAppleMapsUrl(spot.name, spot.address, spot.location);
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -381,9 +458,13 @@
           <div>
             <h3>${spot.name}</h3>
             <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
+            <div class="map-links">
+              <a href="${gUrl}" target="_blank" rel="noopener" class="map-btn map-btn-google">🗺️ Google Maps</a>
+              <a href="${aUrl}" target="_btn" rel="noopener" class="map-btn map-btn-apple">🍏 Apple Maps</a>
+            </div>
           </div>
           <div class="card-footer">
-            <small style="color:#777">📍 ${spot.location}</small>
+            <small style="color:#777">📍 ${spot.address || spot.location}</small>
             <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${spot.id}')">
               ${isSaved ? '❤️' : '🤍'}
             </button>
@@ -404,34 +485,36 @@
         return;
       }
 
-      // Extract unique locations from saved items
       const locations = ['All', ...new Set(savedSpots.map(s => s.location))];
-      
-      // Fallback if active tab was removed
       if (!locations.includes(activeTab)) {
         activeTab = 'All';
       }
 
-      // Render location tabs
       tabsContainer.innerHTML = locations.map(loc => `
         <button class="tab-btn ${loc === activeTab ? 'active' : ''}" onclick="setTab('${loc}')">
           ${loc}
         </button>
       `).join('');
 
-      // Filter list by selected location tab
       const filteredSpots = activeTab === 'All' 
         ? savedSpots 
         : savedSpots.filter(s => s.location === activeTab);
 
       savedContainer.innerHTML = '';
       filteredSpots.forEach(spot => {
+        const gUrl = getGoogleMapsUrl(spot.name, spot.address, spot.location);
+        const aUrl = getAppleMapsUrl(spot.name, spot.address, spot.location);
+
         const li = document.createElement('li');
         li.className = 'saved-item';
         li.innerHTML = `
-          <div>
+          <div class="saved-item-details">
             <strong>${spot.name}</strong>
             <br><small style="color:#666">${spot.cuisine} • 📍 ${spot.location}</small>
+            <div class="map-links">
+              <a href="${gUrl}" target="_blank" rel="noopener" class="map-btn map-btn-google">Google Maps</a>
+              <a href="${aUrl}" target="_blank" rel="noopener" class="map-btn map-btn-apple">Apple Maps</a>
+            </div>
           </div>
           <button class="remove-btn" onclick="toggleSave('${spot.id}')">✖</button>
         `;
@@ -439,7 +522,7 @@
       });
     }
 
-    // Initial load
+    // Initial search
     searchRestaurants();
     renderSaved();
   </script>
