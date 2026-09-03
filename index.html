@@ -439,7 +439,7 @@
 
   <div class="search-container">
     <div class="search-input-group">
-      <input type="text" id="aiSearchInput" placeholder="🤖 Type anything: e.g., 'Quiet cafe with vegan breakfast in Hollywood FL' or 'Miami pizza'">
+      <input type="text" id="aiSearchInput" placeholder="🤖 Search food or area: e.g. 'Tacos in Miami', 'Pizza', 'Downtown Hollywood FL'">
       <button class="btn btn-ai" onclick="runAiSmartSearch()">🤖 AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
     </div>
@@ -449,6 +449,7 @@
       <span class="filter-chip" onclick="setFilter(this, 'cafe')">☕ Cafe & Breakfast</span>
       <span class="filter-chip" onclick="setFilter(this, 'seafood')">🦀 Seafood</span>
       <span class="filter-chip" onclick="setFilter(this, 'tacos')">🌮 Tacos</span>
+      <span class="filter-chip" onclick="setFilter(this, 'pizza')">🍕 Pizza</span>
       <span class="filter-chip" onclick="setFilter(this, 'mediterranean')">🥙 Mediterranean</span>
       <span class="filter-chip" onclick="setFilter(this, 'high-rating')">⭐ 4.7+ Rating</span>
       <span class="filter-chip" onclick="setFilter(this, 'budget')">💲 $ / $$ Only</span>
@@ -473,7 +474,7 @@
       <div class="side-panel" style="background: #f3e8ff;">
         <h3 style="margin-bottom: 8px;">✨ AI Smart Summary</h3>
         <p style="font-size: 0.85rem; color: #444; line-height: 1.4;" id="aiSummaryBox">
-          Analyzing local culinary trends for this area... Select or search a new area to generate real-time dining insights.
+          Showing top local options for this region. Search any keyword or city to generate custom recommendations.
         </p>
       </div>
 
@@ -503,32 +504,39 @@
     const localDatabase = {
       "Hollywood, FL": [
         { 
-          name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$", phone: "(954) 505-3210", hours: "7:30 AM - 4:00 PM", tags: ["Breakfast", "Outdoor Seating", "Vegan Friendly"], aiInsight: "Ideal for quiet morning coffee and artisan poached egg toast.",
+          name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$", phone: "(954) 505-3210", hours: "7:30 AM - 4:00 PM", tags: ["Breakfast", "Outdoor Seating", "Vegan Friendly", "Cafe"], aiInsight: "Ideal for quiet morning coffee and artisan poached egg toast.",
           menu: [
             { item: "Avocado & Poached Egg Toast", price: "$14.50", desc: "Sourdough, smashed avocado, microgreens, chili flakes" },
             { item: "Harrison Espresso Bowl", price: "$12.00", desc: "Acai, espresso shot drizzle, granola, fresh berries" }
           ]
         },
         { 
-          name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails"], aiInsight: "Top recommendation for authentic lamb shawarma & falafel.",
+          name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails", "Mediterranean"], aiInsight: "Top recommendation for authentic lamb shawarma & falafel.",
           menu: [
             { item: "Lamb Shawarma Platter", price: "$19.00", desc: "Slow-roasted lamb, saffron rice, tzatziki, warm pita" },
             { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips" }
           ]
         },
         { 
-          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music"], aiInsight: "Vibrant atmosphere with fresh ceviche and beachfront vibes.",
+          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music", "Seafood", "Tacos"], aiInsight: "Vibrant atmosphere with fresh ceviche and beachfront vibes.",
           menu: [
             { item: "Totem Ceviche Classico", price: "$18.50", desc: "Local whitefish, leche de tigre, sweet potato" },
             { item: "Grilled Mahi-Mahi Tacos", price: "$17.00", desc: "Chipotle aioli, mango salsa, purple cabbage slaw" }
+          ]
+        },
+        { 
+          name: "Florio's Italian Pizza", cuisine: "Pizza & Italian 🍕", rating: "4.7", recScore: "94%", address: "2000 Hollywood Blvd", price: "$$", phone: "(954) 925-2400", hours: "11:30 AM - 11:00 PM", tags: ["Pizza", "Italian", "Takeout"], aiInsight: "Hand-tossed wood-fired pizzas with fresh mozzarella.",
+          menu: [
+            { item: "Margherita Wood-Fired Pizza", price: "$16.00", desc: "San Marzano tomatoes, fresh mozzarella, basil" },
+            { item: "Truffle Mushroom Pizza", price: "$19.50", desc: "Wild mushrooms, truffle cream, fontina cheese" }
           ]
         }
       ]
     };
 
     const mockDb = {
-      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀"],
-      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
+      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀", "Cafe ☕"],
+      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet", "Rustic", "Little"]
     };
 
     let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
@@ -537,6 +545,7 @@
     let visibleCount = 6;
     let activeTab = 'All';
     let currentFilter = 'all';
+    let currentSearchKeyword = '';
 
     function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -552,30 +561,48 @@
       return `https://maps.apple.com/?q=${encodeURIComponent(name)}&address=${encodeURIComponent((address || '') + ' ' + location)}`;
     }
 
-    /* AI Natural Language Query Parser */
+    /* Natural Language Parser & Real Search Routing */
     function runAiSmartSearch() {
       const rawQuery = document.getElementById('aiSearchInput').value.trim();
-      if (!rawQuery) return searchRestaurants("Hollywood, FL");
+      if (!rawQuery) return searchRestaurants("Hollywood, FL", "");
 
-      let detectedLoc = "Hollywood, FL";
-      const knownCities = ["Miami", "Fort Lauderdale", "Hollywood", "Tampa", "Orlando", "New York", "Austin", "Chicago"];
-      
-      for (let city of knownCities) {
-        if (rawQuery.toLowerCase().includes(city.toLowerCase())) {
-          detectedLoc = city;
-          break;
+      let targetLocation = "";
+      let keyword = "";
+
+      // Check if user typed "food in location" (e.g. "Tacos in Miami" or "Pizza in Downtown Hollywood")
+      if (rawQuery.toLowerCase().includes(" in ")) {
+        const parts = rawQuery.split(/\s+in\s+/i);
+        keyword = parts[0].trim();
+        targetLocation = parts[1].trim();
+      } else {
+        // If query looks like a location phrase, use it as location; otherwise use as keyword
+        const locationKeywords = ["fl", "ca", "ny", "tx", "miami", "hollywood", "la", "york", "fort", "beach", "downtown", "city"];
+        const isLoc = locationKeywords.some(lk => rawQuery.toLowerCase().includes(lk));
+        
+        if (isLoc) {
+          targetLocation = rawQuery;
+          keyword = "";
+        } else {
+          targetLocation = document.getElementById('currentLoc').innerText || "Hollywood, FL";
+          keyword = rawQuery;
         }
       }
 
-      searchRestaurants(detectedLoc, rawQuery);
+      currentSearchKeyword = keyword.toLowerCase();
+      searchRestaurants(targetLocation, keyword);
     }
 
-    function generateMockData(location, aiQuery = "") {
+    function generateMockData(location, keyword = "") {
       let baseData = localDatabase[location];
       
       if (!baseData) {
+        // Dynamic mock generator tailored to user's location & query
         baseData = Array.from({ length: 12 }, (_, i) => {
-          const cuisine = getRandomItem(mockDb.cuisines);
+          let cuisine = getRandomItem(mockDb.cuisines);
+          if (keyword) {
+            const capKey = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+            cuisine = `${capKey} Specialty 🍽️`;
+          }
           const cuisineType = cuisine.split(' ')[0];
           const name = `${getRandomItem(mockDb.names)} ${cuisineType}`;
           return {
@@ -588,8 +615,8 @@
             address: `${100 + i * 14} Main St, ${location}`,
             phone: `(${Math.floor(Math.random() * 800 + 100)}) ${Math.floor(Math.random() * 800 + 100)}-${Math.floor(Math.random() * 8999 + 1000)}`,
             hours: "11:00 AM - 10:00 PM",
-            tags: ["AI Matched", "Popular", "Dine-In"],
-            aiInsight: `Matched for '${aiQuery || location}' based on high user satisfaction.`,
+            tags: [keyword || "AI Matched", "Popular", "Dine-In"],
+            aiInsight: `Matched for '${keyword || location}' based on community ratings and popularity.`,
             location: location,
             menu: [
               { item: `Signature ${cuisineType} Special`, price: "$17.50", desc: "Freshly prepared house specialty." },
@@ -608,16 +635,20 @@
       return baseData;
     }
 
-    function searchRestaurants(loc = "Hollywood, FL", aiQuery = "") {
-      document.getElementById('currentLoc').innerText = loc;
-      document.getElementById('statLoc').innerText = loc;
+    function searchRestaurants(loc = "Hollywood, FL", keyword = "") {
+      // Format capitalization
+      const formattedLoc = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      document.getElementById('currentLoc').innerText = formattedLoc;
+      document.getElementById('statLoc').innerText = formattedLoc;
 
-      currentResults = generateMockData(loc, aiQuery);
+      currentResults = generateMockData(formattedLoc, keyword);
       applyCurrentFilter();
 
-      document.getElementById('aiSummaryBox').innerHTML = 
-        aiQuery ? `🤖 <strong>AI Match Analysis:</strong> Filtered <strong>${currentResults.length}</strong> top spots in <strong>${loc}</strong> matching <em>"${aiQuery}"</em>.`
-        : `🤖 <strong>AI Area Summary:</strong> Showing top rated dining spots in <strong>${loc}</strong> with live OpenTable and menu availability.`;
+      const summaryText = keyword 
+        ? `🤖 <strong>AI Match Analysis:</strong> Showing spots in <strong>${formattedLoc}</strong> matching <em>"${keyword}"</em>.`
+        : `🤖 <strong>AI Area Summary:</strong> Active location updated to <strong>${formattedLoc}</strong>. Showing top rated spots with OpenTable & live menus.`;
+        
+      document.getElementById('aiSummaryBox').innerHTML = summaryText;
     }
 
     function setFilter(element, filterType) {
@@ -628,15 +659,26 @@
     }
 
     function applyCurrentFilter() {
-      if (currentFilter === 'all') {
-        filteredResults = [...currentResults];
-      } else if (currentFilter === 'high-rating') {
-        filteredResults = currentResults.filter(r => parseFloat(r.rating) >= 4.7);
-      } else if (currentFilter === 'budget') {
-        filteredResults = currentResults.filter(r => r.price.length <= 2);
-      } else {
-        filteredResults = currentResults.filter(r => r.cuisine.toLowerCase().includes(currentFilter));
-      }
+      filteredResults = currentResults.filter(spot => {
+        // Keyword text matching
+        const matchesKeyword = !currentSearchKeyword || 
+          spot.name.toLowerCase().includes(currentSearchKeyword) ||
+          spot.cuisine.toLowerCase().includes(currentSearchKeyword) ||
+          (spot.tags && spot.tags.some(t => t.toLowerCase().includes(currentSearchKeyword)));
+
+        // Filter Chip matching
+        let matchesChip = true;
+        if (currentFilter === 'high-rating') {
+          matchesChip = parseFloat(spot.rating) >= 4.7;
+        } else if (currentFilter === 'budget') {
+          matchesChip = spot.price.length <= 2;
+        } else if (currentFilter !== 'all') {
+          matchesChip = spot.cuisine.toLowerCase().includes(currentFilter) ||
+            (spot.tags && spot.tags.some(t => t.toLowerCase().includes(currentFilter)));
+        }
+
+        return matchesKeyword && matchesChip;
+      });
 
       visibleCount = 6;
       updateStats();
@@ -649,6 +691,9 @@
         const avg = (filteredResults.reduce((acc, curr) => acc + parseFloat(curr.rating), 0) / filteredResults.length).toFixed(1);
         document.getElementById('statRating').innerText = `${avg} ⭐`;
         document.getElementById('statMatch').innerText = filteredResults[0].recScore || '98%';
+      } else {
+        document.getElementById('statRating').innerText = "N/A";
+        document.getElementById('statMatch').innerText = "0%";
       }
     }
 
@@ -689,7 +734,7 @@
       document.getElementById('menuModal').classList.remove('active');
     }
 
-    /* Fixed Geolocation Service with Error Handling & Extended Fallbacks */
+    /* Fixed Browser Geolocation Logic */
     function useMyLocation() {
       const geoBtn = document.getElementById('geoBtn');
       const searchInput = document.getElementById('aiSearchInput');
@@ -708,22 +753,23 @@
 
           try {
             const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
-              headers: { 'Accept': 'application/json', 'User-Agent': 'NibbleSpotApp/1.0' }
+              headers: { 'Accept': 'application/json' }
             });
 
             if (!res.ok) throw new Error('Geocoding failed');
 
             const data = await res.json();
             const addr = data.address || {};
-            
             const city = addr.city || addr.town || addr.suburb || addr.village || addr.municipality || addr.county || "My Area";
 
             searchInput.value = city;
-            searchRestaurants(city);
+            currentSearchKeyword = '';
+            searchRestaurants(city, '');
           } catch (err) {
             console.warn('Geocoding lookup issue:', err);
             searchInput.value = "My Area";
-            searchRestaurants("My Area");
+            currentSearchKeyword = '';
+            searchRestaurants("My Area", '');
           } finally {
             geoBtn.innerText = "📍 Locate Me";
           }
@@ -741,7 +787,7 @@
               alert("Location request timed out. Please try again.");
               break;
             default:
-              alert("An unknown error occurred while retrieving location.");
+              alert("An error occurred while retrieving location.");
               break;
           }
         },
@@ -775,7 +821,7 @@
       const itemsToShow = filteredResults.slice(0, visibleCount);
 
       if (itemsToShow.length === 0) {
-        container.innerHTML = `<p style="color:#777; grid-column: 1/-1; padding: 2rem; text-align:center;">No spots matched your filter criteria. Try choosing 'All Cuisines'.</p>`;
+        container.innerHTML = `<p style="color:#777; grid-column: 1/-1; padding: 2rem; text-align:center;">No spots matched your query or filter criteria. Try clicking 'All Cuisines' or typing a broader search.</p>`;
         loadMoreBtn.style.display = 'none';
         return;
       }
@@ -877,7 +923,7 @@
       if (e.key === 'Enter') runAiSmartSearch();
     });
 
-    searchRestaurants("Hollywood, FL");
+    searchRestaurants("Hollywood, FL", "");
     renderSaved();
   </script>
 </body>
