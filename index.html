@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NibbleSpot 🍕 Find, Map, Reserve & View Menus</title>
+  <title>NibbleSpot 🍕 Dynamic Restaurant Finder</title>
   <style>
     :root {
       --bg: #fffbf0;
@@ -45,7 +45,6 @@
       text-shadow: 2px 2px 0px var(--secondary);
     }
 
-    /* Search Bar */
     .search-container {
       display: flex;
       justify-content: center;
@@ -59,7 +58,7 @@
       font-size: 1rem;
       border: 3px solid var(--dark);
       border-radius: var(--radius);
-      width: 260px;
+      width: 280px;
       outline: none;
       box-shadow: 4px 4px 0px var(--dark);
     }
@@ -93,7 +92,6 @@
       box-shadow: 2px 2px 0px var(--dark);
     }
 
-    /* Layout */
     .content-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -114,7 +112,6 @@
       gap: 8px;
     }
 
-    /* Cards Grid */
     .results-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -181,7 +178,6 @@
       margin-bottom: 4px;
     }
 
-    /* Action Links & Buttons */
     .card-actions {
       display: flex;
       flex-direction: column;
@@ -239,7 +235,6 @@
 
     .save-btn.saved { background: var(--primary); color: #fff; }
 
-    /* Modal Styling */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -289,7 +284,6 @@
 
     .menu-item:last-child { border-bottom: none; }
 
-    /* AI Widget */
     .ai-panel {
       background: #f3e8ff;
       border: 3px solid var(--dark);
@@ -333,7 +327,6 @@
 
     .chip:hover { background: var(--secondary); }
 
-    /* Saved Panel & Tabs */
     .saved-panel {
       background: #fff;
       border: 3px solid var(--dark);
@@ -380,7 +373,7 @@
 
   <header>
     <h1>NibbleSpot</h1>
-    <p>Discover, Map, Reserve & View Menus Directly!</p>
+    <p>Discover, Map, Reserve & View Menus Anywhere!</p>
   </header>
 
   <div class="search-container">
@@ -391,11 +384,9 @@
   </div>
 
   <div class="ai-panel" id="aiPanel">
-    <h3 style="margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
-      ✨ NibbleAI Assistant
-    </h3>
+    <h3 style="margin-bottom: 8px; display:flex; align-items:center; gap:6px;">✨ NibbleAI Assistant</h3>
     <div class="ai-chips">
-      <span class="chip" onclick="askAI('What is the best dish to order in Hollywood, FL?')">🍝 Top Dish Recs</span>
+      <span class="chip" onclick="askAI('What is the best dish to order?')">🍝 Top Dish Recs</span>
       <span class="chip" onclick="askAI('Which spot has the highest recommendation score?')">🔥 Most Recommended</span>
       <span class="chip" onclick="askAI('Show romantic date night spots with OpenTable reservations')">🍷 Date Night</span>
     </div>
@@ -451,32 +442,22 @@
           name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails"],
           menu: [
             { item: "Lamb Shawarma Platter", price: "$19.00", desc: "Slow-roasted lamb, saffron rice, tzatziki, warm pita" },
-            { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips, hummus" },
-            { item: "Lemonica Signature Mezze", price: "$22.00", desc: "Sampler of hummus, baba ghanoush, grape leaves, falafel" }
+            { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips, hummus" }
           ]
         },
         { 
-          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music", "Full Bar"],
+          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music"],
           menu: [
-            { item: "Totem Ceviche Classico", price: "$18.50", desc: "Local whitefish, leche de tigre, sweet potato, choclo corn" },
-            { item: "Grilled Mahi-Mahi Tacos", price: "$17.00", desc: "Chipotle aioli, mango salsa, purple cabbage slaw" },
-            { item: "Passion Fruit Mojito", price: "$13.00", desc: "Fresh mint, rum, fresh passion fruit puree" }
-          ]
-        },
-        { 
-          name: "OCEAN GRILL & BAR", cuisine: "Oceanfront Grill 🥩", rating: "4.7", recScore: "95%", address: "707 N Broadwalk", price: "$$$", phone: "(954) 929-9922", hours: "11:00 AM - 11:00 PM", tags: ["Broadwalk Seating", "Steaks", "Kid Friendly"],
-          menu: [
-            { item: "Prime Ribeye Steak (12oz)", price: "$38.00", desc: "Garlic butter glaze, loaded baked potato" },
-            { item: "Blackened Salmon Salad", price: "$21.00", desc: "Mixed greens, citrus vinaigrette, candied walnuts" },
-            { item: "Jumbo Lump Crab Cake", price: "$24.00", desc: "Remoulade sauce, grilled lemon" }
+            { item: "Totem Ceviche Classico", price: "$18.50", desc: "Local whitefish, leche de tigre, sweet potato" },
+            { item: "Grilled Mahi-Mahi Tacos", price: "$17.00", desc: "Chipotle aioli, mango salsa, purple cabbage slaw" }
           ]
         }
       ]
     };
 
     const mockDb = {
-      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜"],
-      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's"]
+      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀", "BBQ 🍖"],
+      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet", "Rustic", "Little"]
     };
 
     let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
@@ -486,7 +467,6 @@
 
     function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-    // Direct Integration Links
     function getOpenTableUrl(name, location) {
       return `https://www.opentable.com/s?term=${encodeURIComponent(name + ' ' + location)}`;
     }
@@ -502,31 +482,33 @@
     function generateMockData(location) {
       if (localDatabase[location]) {
         return localDatabase[location].map((item, i) => ({
-          id: `${location.toLowerCase().replace(/\s+/g, '-')}-${i}`,
+          id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}`,
           ...item,
           location: location
         }));
       }
 
-      return Array.from({ length: 8 }, (_, i) => {
+      // Automatically generate 12 dynamic spots when searching any new location
+      return Array.from({ length: 12 }, (_, i) => {
         const cuisine = getRandomItem(mockDb.cuisines);
-        const name = `${getRandomItem(mockDb.names)} ${cuisine.split(' ')[0]}`;
+        const cuisineType = cuisine.split(' ')[0];
+        const name = `${getRandomItem(mockDb.names)} ${cuisineType}`;
         return {
-          id: `${location.toLowerCase().replace(/\s+/g, '-')}-${i}-${Date.now()}`,
+          id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}-${Date.now()}`,
           name: name,
           cuisine: cuisine,
           rating: (Math.random() * (5.0 - 4.1) + 4.1).toFixed(1),
           recScore: `${Math.floor(Math.random() * (99 - 88) + 88)}%`,
           price: "$".repeat(Math.floor(Math.random() * 3) + 1),
-          address: `${100 + i * 12} Main St`,
-          phone: "(555) 019-2834",
+          address: `${100 + i * 14} Main St, ${location}`,
+          phone: `(${Math.floor(Math.random() * 800 + 100)}) ${Math.floor(Math.random() * 800 + 100)}-${Math.floor(Math.random() * 8999 + 1000)}`,
           hours: "11:00 AM - 10:00 PM",
           tags: ["Popular Choice", "Dine-In", "Takeout"],
           location: location,
           menu: [
-            { item: `Specialty ${cuisine.split(' ')[0]} Deluxe`, price: "$16.50", desc: "Chef's signature recipe made fresh daily with local ingredients." },
-            { item: "House Favorite Starter", price: "$10.00", desc: "Crispy appetizer served with house dipping sauce." },
-            { item: "Craft Beverage / Cocktail", price: "$8.50", desc: "Refreshing seasonal specialty beverage." }
+            { item: `Signature ${cuisineType} Platter`, price: "$18.50", desc: `Chef's special ${cuisineType.toLowerCase()} crafted fresh with local ingredients.` },
+            { item: `House ${cuisineType} Starter`, price: "$11.00", desc: "Crispy appetizer paired with homemade signature dipping sauce." },
+            { item: "Craft Refreshment / Cocktail", price: "$9.50", desc: "Handcrafted seasonal beverage." }
           ]
         };
       });
@@ -545,7 +527,6 @@
       renderResults();
     }
 
-    /* Menu Modal Controls */
     function openMenuModal(spotId) {
       const spot = currentResults.find(r => r.id === spotId) || savedSpots.find(s => s.id === spotId);
       if (!spot) return;
@@ -568,8 +549,6 @@
             </div>
           `;
         });
-      } else {
-        menuContainer.innerHTML = `<p style="color:#777">Direct menu preview loaded below.</p>`;
       }
 
       document.getElementById('externalMenuLink').href = `https://www.google.com/search?q=${encodeURIComponent(spot.name + ' ' + spot.location + ' menu')}`;
@@ -587,14 +566,14 @@
     function askAI(question) {
       const chatBox = document.getElementById('aiChatBox');
       const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
-      const topPick = currentResults[0] || { name: "Thanks To Harrison" };
+      const topPick = currentResults[0] || { name: "Local Spot" };
 
       chatBox.innerHTML = `💬 <strong>You:</strong> ${question}<br><br>`;
       setTimeout(() => {
         if (question.includes('highest recommendation')) {
           chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> In <strong>${loc}</strong>, <strong>${topPick.name}</strong> ranks highest at <strong>${topPick.recScore} match</strong>!`;
         } else if (question.includes('best dish')) {
-          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Click <strong>View Menu</strong> on <em>Thanks To Harrison</em> to check out their Avocado & Poached Egg Toast!`;
+          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Click <strong>View Menu</strong> on <em>${topPick.name}</em> to view their signature dishes!`;
         } else {
           chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Reserve directly via OpenTable for ${topPick.name} in ${loc}.`;
         }
@@ -663,9 +642,9 @@
             <span class="rec-score">🔥 ${spot.recScore} Recommended</span>
 
             <div class="meta-details">
-              <div>📍 ${spot.address || spot.location}</div>
-              <div>📞 ${spot.phone || '(555) 123-4567'}</div>
-              <div>🕒 ${spot.hours || 'Open Today'}</div>
+              <div>📍 ${spot.address}</div>
+              <div>📞 ${spot.phone}</div>
+              <div>🕒 ${spot.hours}</div>
               <div style="margin-top:6px;">
                 ${(spot.tags || []).map(t => `<span class="badge-pill">${t}</span>`).join('')}
               </div>
@@ -735,6 +714,11 @@
         savedContainer.appendChild(li);
       });
     }
+
+    // Trigger search when pressing Enter key in search box
+    document.getElementById('locationInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') searchRestaurants();
+    });
 
     searchRestaurants();
     renderSaved();
