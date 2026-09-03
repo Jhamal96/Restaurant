@@ -41,7 +41,7 @@
       text-shadow: 2px 2px 0px var(--secondary);
     }
 
-    /* Search Bar */
+    /* Search Bar & Buttons */
     .search-container {
       display: flex;
       justify-content: center;
@@ -55,7 +55,7 @@
       font-size: 1rem;
       border: 3px solid var(--dark);
       border-radius: var(--radius);
-      width: 300px;
+      width: 280px;
       outline: none;
       box-shadow: 4px 4px 0px var(--dark);
       transition: transform 0.1s;
@@ -71,12 +71,17 @@
       color: var(--dark);
       font-weight: bold;
       border: 3px solid var(--dark);
-      padding: 0.8rem 1.5rem;
-      font-size: 1rem;
+      padding: 0.8rem 1.2rem;
+      font-size: 0.95rem;
       border-radius: var(--radius);
       cursor: pointer;
       box-shadow: 4px 4px 0px var(--dark);
       transition: all 0.15s ease;
+    }
+
+    .btn-geo {
+      background: var(--accent);
+      color: #fff;
     }
 
     .btn:hover {
@@ -96,7 +101,7 @@
       gap: 2rem;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 850px) {
       .content-grid {
         grid-template-columns: 1fr;
       }
@@ -110,10 +115,10 @@
       gap: 8px;
     }
 
-    /* Cards Grid */
+    /* Results Cards Grid */
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
       gap: 1.5rem;
     }
 
@@ -188,7 +193,7 @@
       color: #fff;
     }
 
-    /* Saved Sidebar */
+    /* Saved Sidebar & Tabs */
     .saved-panel {
       background: #fff;
       border: 3px solid var(--dark);
@@ -196,6 +201,32 @@
       padding: 1.5rem;
       box-shadow: 6px 6px 0px var(--dark);
       height: fit-content;
+    }
+
+    .tabs-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #eee;
+    }
+
+    .tab-btn {
+      background: var(--bg);
+      border: 2px solid var(--dark);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
     }
 
     .saved-list {
@@ -227,13 +258,14 @@
 <body>
 
   <header>
-    <h1> NibbleSpot</h1>
-    <p>Discover & collection your favorite local bites!</p>
+    <h1>NibbleSpot</h1>
+    <p>Discover & collect your favorite local bites!</p>
   </header>
 
   <div class="search-container">
-    <input type="text" id="locationInput" placeholder="Enter neighborhood or city..." value="Downtown">
+    <input type="text" id="locationInput" placeholder="Enter city or neighborhood..." value="Downtown">
     <button class="btn" onclick="searchRestaurants()">Find Eats!</button>
+    <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
   </div>
 
   <div class="content-grid">
@@ -244,14 +276,12 @@
 
     <div class="saved-panel">
       <h2 class="section-title">⭐ Saved Places (<span id="savedCount">0</span>)</h2>
-      <ul class="saved-list" id="savedContainer">
-        <p style="color: #888; font-size: 0.9rem;">No favorites saved yet. Click the heart on a spot!</p>
-      </ul>
+      <div class="tabs-container" id="tabsContainer"></div>
+      <ul class="saved-list" id="savedContainer"></ul>
     </div>
   </div>
 
   <script>
-    // Sample dataset generator
     const mockDb = {
       cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bakery 🥐"],
       names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
@@ -259,6 +289,7 @@
 
     let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
     let currentResults = [];
+    let activeTab = 'All';
 
     function getRandomItem(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
@@ -269,7 +300,7 @@
         const cuisine = getRandomItem(mockDb.cuisines);
         const name = `${getRandomItem(mockDb.names)} ${cuisine.split(' ')[0]}`;
         return {
-          id: `${location.toLowerCase()}-${i}-${Date.now()}`,
+          id: `${location.toLowerCase().replace(/\s+/g, '-')}-${i}-${Date.now()}`,
           name: name,
           cuisine: cuisine,
           rating: (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1),
@@ -286,6 +317,39 @@
       renderResults();
     }
 
+    function useMyLocation() {
+      const geoBtn = document.getElementById('geoBtn');
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      geoBtn.innerText = "⏳ Locating...";
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          try {
+            // Free OpenStreetMap reverse geocoding API
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+            const city = data.address.city || data.address.town || data.address.suburb || "My Area";
+            document.getElementById('locationInput').value = city;
+            searchRestaurants();
+          } catch (e) {
+            document.getElementById('locationInput').value = "My Area";
+            searchRestaurants();
+          } finally {
+            geoBtn.innerText = "📍 Locate Me";
+          }
+        },
+        () => {
+          alert('Unable to retrieve location.');
+          geoBtn.innerText = "📍 Locate Me";
+        }
+      );
+    }
+
     function toggleSave(id) {
       const index = savedSpots.findIndex(item => item.id === id);
       if (index > -1) {
@@ -296,6 +360,11 @@
       }
       localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
       renderResults();
+      renderSaved();
+    }
+
+    function setTab(locationName) {
+      activeTab = locationName;
       renderSaved();
     }
 
@@ -325,30 +394,52 @@
     }
 
     function renderSaved() {
-      const container = document.getElementById('savedContainer');
+      const tabsContainer = document.getElementById('tabsContainer');
+      const savedContainer = document.getElementById('savedContainer');
       document.getElementById('savedCount').innerText = savedSpots.length;
 
       if (savedSpots.length === 0) {
-        container.innerHTML = `<p style="color: #888; font-size: 0.9rem;">No favorites saved yet. Click the heart on a spot!</p>`;
+        tabsContainer.innerHTML = '';
+        savedContainer.innerHTML = `<p style="color: #888; font-size: 0.9rem;">No saved spots yet. Heart a place to get started!</p>`;
         return;
       }
 
-      container.innerHTML = '';
-      savedSpots.forEach(spot => {
+      // Extract unique locations from saved items
+      const locations = ['All', ...new Set(savedSpots.map(s => s.location))];
+      
+      // Fallback if active tab was removed
+      if (!locations.includes(activeTab)) {
+        activeTab = 'All';
+      }
+
+      // Render location tabs
+      tabsContainer.innerHTML = locations.map(loc => `
+        <button class="tab-btn ${loc === activeTab ? 'active' : ''}" onclick="setTab('${loc}')">
+          ${loc}
+        </button>
+      `).join('');
+
+      // Filter list by selected location tab
+      const filteredSpots = activeTab === 'All' 
+        ? savedSpots 
+        : savedSpots.filter(s => s.location === activeTab);
+
+      savedContainer.innerHTML = '';
+      filteredSpots.forEach(spot => {
         const li = document.createElement('li');
         li.className = 'saved-item';
         li.innerHTML = `
           <div>
             <strong>${spot.name}</strong>
-            <br><small style="color:#666">${spot.cuisine} (${spot.location})</small>
+            <br><small style="color:#666">${spot.cuisine} • 📍 ${spot.location}</small>
           </div>
           <button class="remove-btn" onclick="toggleSave('${spot.id}')">✖</button>
         `;
-        container.appendChild(li);
+        savedContainer.appendChild(li);
       });
     }
 
-    // Initial render
+    // Initial load
     searchRestaurants();
     renderSaved();
   </script>
