@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NibbleSpot 🍕 Dynamic Restaurant Finder</title>
+  <title>NibbleSpot 🍕 AI Foodie Command Center</title>
   <style>
     :root {
       --bg: #fffbf0;
@@ -29,14 +29,14 @@
     body {
       background-color: var(--bg);
       color: var(--dark);
-      padding: 2rem 1rem;
-      max-width: 1250px;
+      padding: 1.5rem 1rem;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
     header {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     header h1 {
@@ -45,22 +45,65 @@
       text-shadow: 2px 2px 0px var(--secondary);
     }
 
+    /* Dashboard Stats Bar */
+    .dashboard-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border: 3px solid var(--dark);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      box-shadow: 4px 4px 0px var(--dark);
+      text-align: center;
+    }
+
+    .stat-card h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #666;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--dark);
+      margin-top: 2px;
+    }
+
+    /* AI Search Bar */
     .search-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       gap: 10px;
       margin-bottom: 1.5rem;
+      background: #fff;
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: 6px 6px 0px var(--dark);
+    }
+
+    .search-input-group {
+      display: flex;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
-    .search-container input {
+    .search-input-group input {
+      flex: 1;
+      min-width: 280px;
       padding: 0.8rem 1.2rem;
       font-size: 1rem;
       border: 3px solid var(--dark);
-      border-radius: var(--radius);
-      width: 280px;
+      border-radius: 12px;
       outline: none;
-      box-shadow: 4px 4px 0px var(--dark);
+      background: #fffbf0;
     }
 
     .btn {
@@ -70,13 +113,14 @@
       border: 3px solid var(--dark);
       padding: 0.8rem 1.2rem;
       font-size: 0.95rem;
-      border-radius: var(--radius);
+      border-radius: 12px;
       cursor: pointer;
-      box-shadow: 4px 4px 0px var(--dark);
+      box-shadow: 3px 3px 0px var(--dark);
       transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      justify-content: center;
     }
 
     .btn-geo { background: var(--accent); color: #fff; }
@@ -84,38 +128,63 @@
 
     .btn:hover {
       transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0px var(--dark);
+      box-shadow: 5px 5px 0px var(--dark);
     }
 
     .btn:active {
-      transform: translate(2px, 2px);
+      transform: translate(1px, 1px);
       box-shadow: 2px 2px 0px var(--dark);
     }
 
-    .content-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
+    /* Filter Chips Bar */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      flex-wrap: wrap;
     }
 
-    @media (max-width: 900px) {
-      .content-grid {
-        grid-template-columns: 1fr;
-      }
+    .filter-chip {
+      background: #fff;
+      border: 2px solid var(--dark);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Main Grid Layout */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 950px) {
+      .content-grid { grid-template-columns: 1fr; }
     }
 
     .section-title {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       margin-bottom: 1rem;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
     }
 
+    /* Restaurant Cards Grid */
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.2rem;
       margin-bottom: 1.5rem;
     }
 
@@ -159,6 +228,16 @@
       margin: 6px 0 8px 0;
     }
 
+    .ai-insight-box {
+      background: #f3e8ff;
+      border: 2px dashed var(--ai-purple);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      color: #4a154b;
+      margin-bottom: 8px;
+    }
+
     .meta-details {
       font-size: 0.8rem;
       color: #555;
@@ -178,11 +257,12 @@
       margin-bottom: 4px;
     }
 
+    /* Action Links & Buttons */
     .card-actions {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 6px;
+      margin-top: 8px;
     }
 
     .action-row {
@@ -191,7 +271,7 @@
     }
 
     .link-btn {
-      padding: 6px 10px;
+      padding: 6px 8px;
       font-size: 0.75rem;
       font-weight: bold;
       text-decoration: none;
@@ -235,6 +315,22 @@
 
     .save-btn.saved { background: var(--primary); color: #fff; }
 
+    /* Right Side Panels */
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .side-panel {
+      background: #fff;
+      border: 3px solid var(--dark);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      box-shadow: 6px 6px 0px var(--dark);
+    }
+
+    /* Modal Overlay */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -253,7 +349,7 @@
       border: 4px solid var(--dark);
       border-radius: var(--radius);
       box-shadow: 8px 8px 0px var(--dark);
-      max-width: 550px;
+      max-width: 520px;
       width: 100%;
       max-height: 85vh;
       overflow-y: auto;
@@ -280,59 +376,6 @@
       justify-content: space-between;
       border-bottom: 2px dashed #eee;
       padding: 10px 0;
-    }
-
-    .menu-item:last-child { border-bottom: none; }
-
-    .ai-panel {
-      background: #f3e8ff;
-      border: 3px solid var(--dark);
-      border-radius: var(--radius);
-      padding: 1.2rem;
-      box-shadow: 6px 6px 0px var(--dark);
-      margin-bottom: 1.5rem;
-      display: none;
-    }
-
-    .ai-panel.active { display: block; }
-
-    .ai-chat-box {
-      background: white;
-      border: 2px solid var(--dark);
-      border-radius: 12px;
-      padding: 10px;
-      min-height: 80px;
-      max-height: 180px;
-      overflow-y: auto;
-      font-size: 0.9rem;
-      margin-bottom: 10px;
-    }
-
-    .ai-chips {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    .chip {
-      background: white;
-      border: 2px solid var(--dark);
-      border-radius: 16px;
-      padding: 4px 10px;
-      font-size: 0.78rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .chip:hover { background: var(--secondary); }
-
-    .saved-panel {
-      background: #fff;
-      border: 3px solid var(--dark);
-      border-radius: var(--radius);
-      padding: 1.2rem;
-      box-shadow: 6px 6px 0px var(--dark);
     }
 
     .tabs-container {
@@ -372,44 +415,74 @@
 <body>
 
   <header>
-    <h1>NibbleSpot</h1>
-    <p>Discover, Map, Reserve & View Menus Anywhere!</p>
+    <h1>NibbleSpot AI</h1>
+    <p>Smart Foodie Command Center & Spot Recommender</p>
   </header>
 
-  <div class="search-container">
-    <input type="text" id="locationInput" placeholder="Enter city or neighborhood..." value="Hollywood, FL">
-    <button class="btn" onclick="searchRestaurants()">Find Eats!</button>
-    <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
-    <button class="btn btn-ai" onclick="toggleAIPanel()">🤖 NibbleAI</button>
+  <div class="dashboard-bar">
+    <div class="stat-card">
+      <h4>Active Region</h4>
+      <div class="value" id="statLoc">Hollywood, FL</div>
+    </div>
+    <div class="stat-card">
+      <h4>Eats Discovered</h4>
+      <div class="value" id="statCount">0</div>
+    </div>
+    <div class="stat-card">
+      <h4>Avg Community Rating</h4>
+      <div class="value" id="statRating">4.7 ⭐</div>
+    </div>
+    <div class="stat-card">
+      <h4>Top AI Match</h4>
+      <div class="value" id="statMatch" style="color:var(--ai-purple)">99%</div>
+    </div>
   </div>
 
-  <div class="ai-panel" id="aiPanel">
-    <h3 style="margin-bottom: 8px; display:flex; align-items:center; gap:6px;">✨ NibbleAI Assistant</h3>
-    <div class="ai-chips">
-      <span class="chip" onclick="askAI('What is the best dish to order?')">🍝 Top Dish Recs</span>
-      <span class="chip" onclick="askAI('Which spot has the highest recommendation score?')">🔥 Most Recommended</span>
-      <span class="chip" onclick="askAI('Show romantic date night spots with OpenTable reservations')">🍷 Date Night</span>
+  <div class="search-container">
+    <div class="search-input-group">
+      <input type="text" id="aiSearchInput" placeholder="🤖 Type anything: e.g., 'Quiet cafe with vegan breakfast in Hollywood FL' or 'Miami pizza'">
+      <button class="btn btn-ai" onclick="runAiSmartSearch()">🤖 AI Search</button>
+      <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
     </div>
-    <div class="ai-chat-box" id="aiChatBox">
-      🤖 <em>"Ask me what you're craving or tap a suggestion above!"</em>
+
+    <div class="filter-bar">
+      <span class="filter-chip active" onclick="setFilter(this, 'all')">All Cuisines</span>
+      <span class="filter-chip" onclick="setFilter(this, 'cafe')">☕ Cafe & Breakfast</span>
+      <span class="filter-chip" onclick="setFilter(this, 'seafood')">🦀 Seafood</span>
+      <span class="filter-chip" onclick="setFilter(this, 'tacos')">🌮 Tacos</span>
+      <span class="filter-chip" onclick="setFilter(this, 'mediterranean')">🥙 Mediterranean</span>
+      <span class="filter-chip" onclick="setFilter(this, 'high-rating')">⭐ 4.7+ Rating</span>
+      <span class="filter-chip" onclick="setFilter(this, 'budget')">💲 $ / $$ Only</span>
     </div>
   </div>
 
   <div class="content-grid">
     <div>
-      <h2 class="section-title">
-        📍 Spots in <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span>
-      </h2>
+      <div class="section-title">
+        <span>📍 Discovered Spots in <strong id="currentLoc" style="color:var(--primary)">Hollywood, FL</strong></span>
+        <small style="font-size:0.85rem; color:#666;" id="aiParsingTag">✨ AI Active Parsing</small>
+      </div>
+
       <div class="results-grid" id="resultsContainer"></div>
+
       <div style="text-align: center; margin-top: 1rem;">
         <button class="btn" id="loadMoreBtn" style="display: none;" onclick="loadMore()">✨ Load More Eats</button>
       </div>
     </div>
 
-    <div class="saved-panel">
-      <h2 class="section-title">⭐ Saved Places (<span id="savedCount">0</span>)</h2>
-      <div class="tabs-container" id="tabsContainer"></div>
-      <ul class="saved-list" id="savedContainer"></ul>
+    <div class="side-stack">
+      <div class="side-panel" style="background: #f3e8ff;">
+        <h3 style="margin-bottom: 8px;">✨ AI Smart Summary</h3>
+        <p style="font-size: 0.85rem; color: #444; line-height: 1.4;" id="aiSummaryBox">
+          Analyzing local culinary trends for this area... Select or search a new area to generate real-time dining insights.
+        </p>
+      </div>
+
+      <div class="side-panel">
+        <h3 style="margin-bottom: 10px;">⭐ Saved Places (<span id="savedCount">0</span>)</h3>
+        <div class="tabs-container" id="tabsContainer"></div>
+        <ul class="saved-list" id="savedContainer"></ul>
+      </div>
     </div>
   </div>
 
@@ -422,7 +495,7 @@
       <h3 style="margin-bottom: 0.8rem;">📜 Signature Menu Items</h3>
       <div id="menuItemsList"></div>
       <div style="margin-top: 1.5rem; text-align: center;">
-        <a id="externalMenuLink" href="#" target="_blank" class="btn btn-menu" style="text-decoration:none; width: 100%;">🌐 Search Full Menu Online</a>
+        <a id="externalMenuLink" href="#" target="_blank" class="btn btn-menu" style="text-decoration:none; width: 100%;">🌐 Full Online Menu</a>
       </div>
     </div>
   </div>
@@ -431,22 +504,21 @@
     const localDatabase = {
       "Hollywood, FL": [
         { 
-          name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$", phone: "(954) 505-3210", hours: "7:30 AM - 4:00 PM", tags: ["Breakfast", "Outdoor Seating", "Vegan Friendly"],
+          name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$", phone: "(954) 505-3210", hours: "7:30 AM - 4:00 PM", tags: ["Breakfast", "Outdoor Seating", "Vegan Friendly"], aiInsight: "Ideal for quiet morning coffee and artisan poached egg toast.",
           menu: [
             { item: "Avocado & Poached Egg Toast", price: "$14.50", desc: "Sourdough, smashed avocado, microgreens, chili flakes" },
-            { item: "Harrison Espresso Bowl", price: "$12.00", desc: "Acai, espresso shot drizzle, granola, fresh berries" },
-            { item: "Truffle Mushroom Omelet", price: "$16.00", desc: "Wild mushrooms, goat cheese, herbs, side artisan toast" }
+            { item: "Harrison Espresso Bowl", price: "$12.00", desc: "Acai, espresso shot drizzle, granola, fresh berries" }
           ]
         },
         { 
-          name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails"],
+          name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails"], aiInsight: "Top recommendation for authentic lamb shawarma & falafel.",
           menu: [
             { item: "Lamb Shawarma Platter", price: "$19.00", desc: "Slow-roasted lamb, saffron rice, tzatziki, warm pita" },
-            { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips, hummus" }
+            { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips" }
           ]
         },
         { 
-          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music"],
+          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music"], aiInsight: "Vibrant atmosphere with fresh ceviche and beachfront vibes.",
           menu: [
             { item: "Totem Ceviche Classico", price: "$18.50", desc: "Local whitefish, leche de tigre, sweet potato" },
             { item: "Grilled Mahi-Mahi Tacos", price: "$17.00", desc: "Chipotle aioli, mango salsa, purple cabbage slaw" }
@@ -456,14 +528,16 @@
     };
 
     const mockDb = {
-      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀", "BBQ 🍖"],
-      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet", "Rustic", "Little"]
+      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀"],
+      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet"]
     };
 
     let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
     let currentResults = [];
+    let filteredResults = [];
     let visibleCount = 6;
     let activeTab = 'All';
+    let currentFilter = 'all';
 
     function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -479,47 +553,106 @@
       return `https://maps.apple.com/?q=${encodeURIComponent(name)}&address=${encodeURIComponent((address || '') + ' ' + location)}`;
     }
 
-    function generateMockData(location) {
-      if (localDatabase[location]) {
-        return localDatabase[location].map((item, i) => ({
+    /* AI Natural Language Query Parser */
+    function runAiSmartSearch() {
+      const rawQuery = document.getElementById('aiSearchInput').value.trim();
+      if (!rawQuery) return searchRestaurants("Hollywood, FL");
+
+      // Extract target location if present, else fallback
+      let detectedLoc = "Hollywood, FL";
+      const knownCities = ["Miami", "Fort Lauderdale", "Hollywood", "Tampa", "Orlando", "New York", "Austin", "Chicago"];
+      
+      for (let city of knownCities) {
+        if (rawQuery.toLowerCase().includes(city.toLowerCase())) {
+          detectedLoc = city;
+          break;
+        }
+      }
+
+      searchRestaurants(detectedLoc, rawQuery);
+    }
+
+    function generateMockData(location, aiQuery = "") {
+      let baseData = localDatabase[location];
+      
+      if (!baseData) {
+        baseData = Array.from({ length: 12 }, (_, i) => {
+          const cuisine = getRandomItem(mockDb.cuisines);
+          const cuisineType = cuisine.split(' ')[0];
+          const name = `${getRandomItem(mockDb.names)} ${cuisineType}`;
+          return {
+            id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}-${Date.now()}`,
+            name: name,
+            cuisine: cuisine,
+            rating: (Math.random() * (5.0 - 4.2) + 4.2).toFixed(1),
+            recScore: `${Math.floor(Math.random() * (99 - 89) + 89)}%`,
+            price: "$".repeat(Math.floor(Math.random() * 3) + 1),
+            address: `${100 + i * 14} Main St, ${location}`,
+            phone: `(${Math.floor(Math.random() * 800 + 100)}) ${Math.floor(Math.random() * 800 + 100)}-${Math.floor(Math.random() * 8999 + 1000)}`,
+            hours: "11:00 AM - 10:00 PM",
+            tags: ["AI Matched", "Popular", "Dine-In"],
+            aiInsight: `Matched for '${aiQuery || location}' based on high user satisfaction.`,
+            location: location,
+            menu: [
+              { item: `Signature ${cuisineType} Special`, price: "$17.50", desc: "Freshly prepared house specialty." },
+              { item: `House Favorite Appetizer`, price: "$10.50", desc: "Chef's custom recipe starter." }
+            ]
+          };
+        });
+      } else {
+        baseData = baseData.map((item, i) => ({
           id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}`,
           ...item,
           location: location
         }));
       }
 
-      // Automatically generate 12 dynamic spots when searching any new location
-      return Array.from({ length: 12 }, (_, i) => {
-        const cuisine = getRandomItem(mockDb.cuisines);
-        const cuisineType = cuisine.split(' ')[0];
-        const name = `${getRandomItem(mockDb.names)} ${cuisineType}`;
-        return {
-          id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}-${Date.now()}`,
-          name: name,
-          cuisine: cuisine,
-          rating: (Math.random() * (5.0 - 4.1) + 4.1).toFixed(1),
-          recScore: `${Math.floor(Math.random() * (99 - 88) + 88)}%`,
-          price: "$".repeat(Math.floor(Math.random() * 3) + 1),
-          address: `${100 + i * 14} Main St, ${location}`,
-          phone: `(${Math.floor(Math.random() * 800 + 100)}) ${Math.floor(Math.random() * 800 + 100)}-${Math.floor(Math.random() * 8999 + 1000)}`,
-          hours: "11:00 AM - 10:00 PM",
-          tags: ["Popular Choice", "Dine-In", "Takeout"],
-          location: location,
-          menu: [
-            { item: `Signature ${cuisineType} Platter`, price: "$18.50", desc: `Chef's special ${cuisineType.toLowerCase()} crafted fresh with local ingredients.` },
-            { item: `House ${cuisineType} Starter`, price: "$11.00", desc: "Crispy appetizer paired with homemade signature dipping sauce." },
-            { item: "Craft Refreshment / Cocktail", price: "$9.50", desc: "Handcrafted seasonal beverage." }
-          ]
-        };
-      });
+      return baseData;
     }
 
-    function searchRestaurants() {
-      const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
+    function searchRestaurants(loc = "Hollywood, FL", aiQuery = "") {
       document.getElementById('currentLoc').innerText = loc;
-      currentResults = generateMockData(loc);
+      document.getElementById('statLoc').innerText = loc;
+
+      currentResults = generateMockData(loc, aiQuery);
+      applyCurrentFilter();
+
+      // Update AI Insights panel
+      document.getElementById('aiSummaryBox').innerHTML = 
+        aiQuery ? `🤖 <strong>AI Match Analysis:</strong> Filtered <strong>${currentResults.length}</strong> top spots in <strong>${loc}</strong> matching <em>"${aiQuery}"</em>.`
+        : `🤖 <strong>AI Area Summary:</strong> Showing top rated dining spots in <strong>${loc}</strong> with live OpenTable and menu availability.`;
+    }
+
+    function setFilter(element, filterType) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      element.classList.add('active');
+      currentFilter = filterType;
+      applyCurrentFilter();
+    }
+
+    function applyCurrentFilter() {
+      if (currentFilter === 'all') {
+        filteredResults = [...currentResults];
+      } else if (currentFilter === 'high-rating') {
+        filteredResults = currentResults.filter(r => parseFloat(r.rating) >= 4.7);
+      } else if (currentFilter === 'budget') {
+        filteredResults = currentResults.filter(r => r.price.length <= 2);
+      } else {
+        filteredResults = currentResults.filter(r => r.cuisine.toLowerCase().includes(currentFilter));
+      }
+
       visibleCount = 6;
+      updateStats();
       renderResults();
+    }
+
+    function updateStats() {
+      document.getElementById('statCount').innerText = filteredResults.length;
+      if (filteredResults.length > 0) {
+        const avg = (filteredResults.reduce((acc, curr) => acc + parseFloat(curr.rating), 0) / filteredResults.length).toFixed(1);
+        document.getElementById('statRating').innerText = `${avg} ⭐`;
+        document.getElementById('statMatch').innerText = filteredResults[0].recScore || '98%';
+      }
     }
 
     function loadMore() {
@@ -555,29 +688,8 @@
       document.getElementById('menuModal').classList.add('active');
     }
 
-    function closeMenuModal(e) {
+    function closeMenuModal() {
       document.getElementById('menuModal').classList.remove('active');
-    }
-
-    function toggleAIPanel() {
-      document.getElementById('aiPanel').classList.toggle('active');
-    }
-
-    function askAI(question) {
-      const chatBox = document.getElementById('aiChatBox');
-      const loc = document.getElementById('locationInput').value.trim() || 'Hollywood, FL';
-      const topPick = currentResults[0] || { name: "Local Spot" };
-
-      chatBox.innerHTML = `💬 <strong>You:</strong> ${question}<br><br>`;
-      setTimeout(() => {
-        if (question.includes('highest recommendation')) {
-          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> In <strong>${loc}</strong>, <strong>${topPick.name}</strong> ranks highest at <strong>${topPick.recScore} match</strong>!`;
-        } else if (question.includes('best dish')) {
-          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Click <strong>View Menu</strong> on <em>${topPick.name}</em> to view their signature dishes!`;
-        } else {
-          chatBox.innerHTML += `🤖 <strong>NibbleAI:</strong> Reserve directly via OpenTable for ${topPick.name} in ${loc}.`;
-        }
-      }, 300);
     }
 
     function useMyLocation() {
@@ -590,11 +702,10 @@
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
           const data = await res.json();
           const city = data.address.city || data.address.town || "My Area";
-          document.getElementById('locationInput').value = city;
-          searchRestaurants();
+          document.getElementById('aiSearchInput').value = city;
+          searchRestaurants(city);
         } catch {
-          document.getElementById('locationInput').value = "My Area";
-          searchRestaurants();
+          searchRestaurants("My Area");
         } finally {
           geoBtn.innerText = "📍 Locate Me";
         }
@@ -624,7 +735,13 @@
       const loadMoreBtn = document.getElementById('loadMoreBtn');
       container.innerHTML = '';
 
-      const itemsToShow = currentResults.slice(0, visibleCount);
+      const itemsToShow = filteredResults.slice(0, visibleCount);
+
+      if (itemsToShow.length === 0) {
+        container.innerHTML = `<p style="color:#777; grid-column: 1/-1; padding: 2rem; text-align:center;">No spots matched your filter criteria. Try choosing 'All Cuisines'.</p>`;
+        loadMoreBtn.style.display = 'none';
+        return;
+      }
 
       itemsToShow.forEach(spot => {
         const isSaved = savedSpots.some(s => s.id === spot.id);
@@ -639,7 +756,11 @@
           <div>
             <h3>${spot.name}</h3>
             <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
-            <span class="rec-score">🔥 ${spot.recScore} Recommended</span>
+            <span class="rec-score">🔥 ${spot.recScore} Match</span>
+
+            <div class="ai-insight-box">
+              💡 ${spot.aiInsight || 'Top spot for food quality and user satisfaction.'}
+            </div>
 
             <div class="meta-details">
               <div>📍 ${spot.address}</div>
@@ -653,11 +774,11 @@
             <div class="card-actions">
               <div class="action-row">
                 <a href="${otUrl}" target="_blank" class="link-btn btn-opentable">🍷 Reserve</a>
-                <button onclick="openMenuModal('${spot.id}')" class="link-btn btn-menu">📜 View Menu</button>
+                <button onclick="openMenuModal('${spot.id}')" class="link-btn btn-menu">📜 Menu</button>
               </div>
               <div class="action-row">
-                <a href="${gUrl}" target="_blank" class="link-btn btn-google">🗺️ Google Maps</a>
-                <a href="${aUrl}" target="_blank" class="link-btn btn-apple">🍏 Apple Maps</a>
+                <a href="${gUrl}" target="_blank" class="link-btn btn-google">🗺️ Google</a>
+                <a href="${aUrl}" target="_blank" class="link-btn btn-apple">🍏 Apple</a>
               </div>
             </div>
           </div>
@@ -672,7 +793,7 @@
         container.appendChild(card);
       });
 
-      loadMoreBtn.style.display = visibleCount < currentResults.length ? 'inline-block' : 'none';
+      loadMoreBtn.style.display = visibleCount < filteredResults.length ? 'inline-block' : 'none';
     }
 
     function renderSaved() {
@@ -705,7 +826,7 @@
             <strong>${spot.name}</strong>
             <br><small style="color:#666">${spot.cuisine} • 📍 ${spot.location}</small>
             <div style="margin-top: 4px; display:flex; gap:10px;">
-              <a href="${otUrl}" target="_blank" style="font-size:0.75rem; color:var(--opentable-red); font-weight:bold;">Book on OpenTable 🍷</a>
+              <a href="${otUrl}" target="_blank" style="font-size:0.75rem; color:var(--opentable-red); font-weight:bold;">Book OpenTable 🍷</a>
               <a href="#" onclick="openMenuModal('${spot.id}'); return false;" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">View Menu 📜</a>
             </div>
           </div>
@@ -715,12 +836,11 @@
       });
     }
 
-    // Trigger search when pressing Enter key in search box
-    document.getElementById('locationInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') searchRestaurants();
+    document.getElementById('aiSearchInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') runAiSmartSearch();
     });
 
-    searchRestaurants();
+    searchRestaurants("Hollywood, FL");
     renderSaved();
   </script>
 </body>
