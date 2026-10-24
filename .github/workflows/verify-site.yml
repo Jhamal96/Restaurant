@@ -75,6 +75,58 @@ jobs:
           console.log('All installed-app UI and caching checks passed');
           NODE
 
+      - name: Verify live appearance themes and saved system preference
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in /theme.js /theme.css; do
+            curl -fsSL --max-time 25 "https://restaurant.ajdapp.org$path" -o "$(basename "$path")"
+          done
+          curl -fsSL --max-time 25 'https://restaurant.ajdapp.org/' -o appearance-index.html
+          curl -fsSL --max-time 25 'https://restaurant.ajdapp.org/download' -o appearance-download.html
+          node --check theme.js
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+          const source=fs.readFileSync('theme.js','utf8');
+          function simulate(initial,systemDark){
+            const saved=new Map(initial?[['nibblespot_appearance',initial]]:[]);
+            const attr={},meta={content:''},listeners={};
+            const media={matches:systemDark,addEventListener(name,cb){listeners['media:'+name]=cb;}};
+            const root={style:{},setAttribute(k,v){attr[k]=v}};
+            const document={documentElement:root,readyState:'loading',
+              querySelector(s){return s==='meta[name="theme-color"]'?{setAttribute(_k,v){meta.content=v}}:null},
+              querySelectorAll(){return []},getElementById(){return null},addEventListener(){}};
+            const ctx={document,window:{matchMedia(){return media},addEventListener(k,cb){listeners[k]=cb}},
+              localStorage:{getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)}};
+            vm.runInNewContext(source,ctx);
+            return {theme:ctx.window.NibbleSpotTheme,attr,media,listeners,saved,meta,root};
+          }
+          const a=simulate(null,false);
+          assert.equal(a.theme.preference,'system');
+          assert.equal(a.theme.effective,'light');
+          a.media.matches=true;a.listeners['media:change']();
+          assert.equal(a.theme.effective,'dark','system should follow device change');
+          assert.equal(a.attr['data-theme'],'dark');
+          a.theme.set('ultra-dark');
+          assert.equal(a.theme.effective,'ultra-dark');
+          assert.equal(a.saved.get('nibblespot_appearance'),'ultra-dark');
+          assert.equal(a.meta.content,'#050506');
+          a.media.matches=false;a.listeners['media:change']();
+          assert.equal(a.theme.effective,'ultra-dark','manual theme overrides OS');
+          a.theme.set('system');assert.equal(a.theme.effective,'light');
+          const b=simulate('dark',false);
+          assert.equal(b.theme.effective,'dark','saved manual theme must load');
+          assert.equal(b.root.style.colorScheme,'dark');
+          const stylesheet=fs.readFileSync('theme.css','utf8');
+          for(const mode of ['light','dark','ultra-dark'])assert(stylesheet.includes('data-theme="'+mode+'"'));
+          for(const name of ['preview-light','preview-dark','preview-ultra-dark','preview-system','nibble-settings-btn'])assert(stylesheet.includes(name));
+          for(const html of ['appearance-index.html','appearance-download.html']){
+            const page=fs.readFileSync(html,'utf8');
+            assert(page.includes('src="/theme.js"')&&page.includes('href="/theme.css"'),html);
+          }
+          console.log('System, Light, Dark and Ultra Dark modes passed theme switching tests.');
+          NODE
+
       - name: Verify Apple Maps, auto-capitalization and desktop download page
         shell: bash
         run: |
