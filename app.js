@@ -42,6 +42,9 @@ function selectedLocationCoords(city){
   ? {lat:selectedLocation.lat,lon:selectedLocation.lon}:null;
 }
 function hideLocationSuggestions(){
+ clearTimeout(locationSuggestTimer);
+ locationRequestSequence++;
+ if(locationFetchController){locationFetchController.abort();locationFetchController=null;}
  locationMenu.hidden=true;
  locationInput.setAttribute('aria-expanded','false');
  locationInput.removeAttribute('aria-activedescendant');
