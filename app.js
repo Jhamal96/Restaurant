@@ -299,9 +299,9 @@ function openMenuModal(id){const spot=currentResults.find(s=>s.id===id)||savedSp
 function closeMenuModal(){byId('menuModal').classList.remove('active')}
 function openLiveSearch(){const{q,city}=getSearchParts();window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([q||'restaurants',city].join(' in ')),'_blank','noopener,noreferrer')}
 function openDownload(){location.href='/download'}
-function installNibbleSpot(){if(installPrompt){const p=installPrompt;installPrompt=null;p.prompt();return}const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);alert(ios?'In Safari, tap Share and choose Add to Home Screen.':'Use your browser menu and choose Install app, or visit our Download page for the Android APK.')}
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=byId('installAppBtn');if(b)b.hidden=false});
-window.addEventListener('appinstalled',()=>{installPrompt=null;const b=byId('installAppBtn');if(b)b.hidden=true});
+function installNibbleSpot(){if(window.NibbleSpotInstallState?.isInstalled())return;if(installPrompt){const p=installPrompt;installPrompt=null;p.prompt();return}const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);alert(ios?'In Safari, tap Share and choose Add to Home Screen.':'Use your browser menu and choose Install app, or visit our Download page for the Android APK.')}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();if(window.NibbleSpotInstallState?.isInstalled())return;installPrompt=e;const b=byId('installAppBtn');if(b)b.hidden=false});
+window.addEventListener('appinstalled',()=>{installPrompt=null;window.NibbleSpotInstallState?.markInstalled();const b=byId('installAppBtn');if(b)b.hidden=true});
 ['cityInput','aiSearchInput','newSpotName','newSpotLocation','newSpotCuisine','newSpotAddress'].forEach(id=>{
  const input=byId(id);
  if(input){input.setAttribute('autocapitalize','words');input.addEventListener('blur',()=>capitalizeField(input));}
