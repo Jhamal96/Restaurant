@@ -1,0 +1,42 @@
+name: Verify NibbleSpot live site
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-site.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check live PWA assets and backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /download /app.js /icon.svg /manifest.webmanifest /sw.js; do
+            echo "Checking $path"
+            curl --fail-with-body --location --max-time 30 --retry 2 --retry-delay 2 "https://restaurant.ajdapp.org$path" -o /dev/null
+          done
+          curl --fail-with-body --max-time 30 --retry 2 --retry-delay 2 "https://restaurant.ajdapp.org/api/health" -o health.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('health.json'))
+          print('Health:',d)
+          assert d.get('ok') is True, d
+          assert d.get('ai') is True, 'Missing AI binding'
+          PY
+      - name: Check restaurant search result
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --max-time 55 --retry 1 "https://restaurant.ajdapp.org/api/search?location=Miami%2C%20FL&q=pizza" -o search.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('search.json'))
+          print('Search returned',len(d.get('results',[])),'actual listings, message:',d.get('message'))
+          assert isinstance(d.get('results'),list)
+          assert d.get('source','').startswith('OpenStreetMap'), d
+          PY
