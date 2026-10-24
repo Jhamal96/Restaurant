@@ -144,3 +144,45 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupSettings, {once:true});
   else setupSettings();
 })();
+/* Release announcements share the current Settings style and preserve the saved-list data. */
+(function(){'use strict';
+ const VERSION='2026-10-24-nibblespot-welcome-v1';
+ const KEY='nibblespot_updates_last_acknowledged',DISABLE='nibblespot_updates_dont_show_again';
+ const features=[
+  ['⌕','Discover restaurants','Search real restaurant listings by location, restaurant name, or cuisine. Get suggested cities, addresses, and restaurants while typing.'],
+  ['✦','AI-powered search','Use natural-language requests to help interpret cuisines and locations. Results are grounded in restaurant listings rather than invented places.'],
+  ['⌖','Location and maps','Find places near your location with permission, open Apple Maps, and look up menus and navigation.'],
+  ['♡','Our saved places','Save favorites and new finds by city or destination. Copy a list to share with one another. Saved places remain on this device; cloud syncing is not enabled yet.'],
+  ['◐','Make it comfortable','Pick Follow System, Light, Dark, or Ultra Dark in Settings. Your device remembers the choice.'],
+  ['↓','Install the app','Use the Download page for the supported web and device app options; installation prompts are hidden when the web app is installed.']
+ ];
+ let opener=null,modal=null;
+ function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+ function put(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+ function setup(){
+  if(document.getElementById('nibbleUpdatesOverlay'))return;
+  const settings=document.querySelector('#nibbleSettingsOverlay .nibble-settings-body');
+  if(!settings)return;
+  const entry=document.createElement('section');entry.className='nibble-updates-entry';entry.innerHTML='<div><strong>✨ What’s New</strong><p>Discover what NibbleSpot can do and review the latest improvements.</p></div><button type="button" class="nibble-updates-link">View Updates ↗</button>';
+  settings.append(entry);
+  const overlay=document.createElement('div');overlay.id='nibbleUpdatesOverlay';overlay.className='nibble-updates-overlay';overlay.hidden=true;
+  overlay.innerHTML='<section class="nibble-updates-panel" role="dialog" aria-modal="true" aria-labelledby="nibbleUpdatesTitle" aria-describedby="nibbleUpdatesDesc">'+
+  '<div class="nibble-updates-head"><div><span class="nibble-settings-eyebrow">OUR TABLE, YOUR LITTLE ADVENTURES ♡</span><h2 id="nibbleUpdatesTitle">Welcome to NibbleSpot</h2><p id="nibbleUpdatesDesc">Here’s what’s new, and everything you can do together.</p></div><button type="button" id="nibbleUpdatesClose" class="nibble-settings-close" aria-label="Close updates">✕</button></div>'+
+  '<div class="nibble-updates-release"><span>✨ OCTOBER 24, 2026 UPDATE</span><strong>Better restaurant adventures, together</strong><p>New search suggestions, precise location searching, AI-assisted discovery, Apple Maps, and comfortable display themes.</p></div>'+
+  '<div class="nibble-updates-features">'+features.map(([icon,title,description])=>'<div class="nibble-updates-feature"><span aria-hidden="true">'+icon+'</span><div><strong>'+title+'</strong><p>'+description+'</p></div></div>').join('')+'</div>'+
+  '<label class="nibble-updates-optout"><input type="checkbox" id="nibbleUpdatesDontShow"> <span>Don’t show future update pop-ups automatically</span></label>'+
+  '<button type="button" class="nibble-updates-confirm" id="nibbleUpdatesConfirm">Got it! Let’s find somewhere lovely ♡</button></section>';
+  document.body.append(overlay);modal=overlay;
+  const closeButton=overlay.querySelector('#nibbleUpdatesClose'),confirmButton=overlay.querySelector('#nibbleUpdatesConfirm'),optout=overlay.querySelector('#nibbleUpdatesDontShow');
+  function open(){opener=document.activeElement;const settingsOverlay=document.getElementById('nibbleSettingsOverlay');if(settingsOverlay&&!settingsOverlay.hidden){settingsOverlay.hidden=true;document.body.classList.remove('nibble-settings-open')}optout.checked=get(DISABLE)==='1';overlay.hidden=false;document.body.classList.add('nibble-updates-open');closeButton.focus()}
+  function close(){if(overlay.hidden)return;overlay.hidden=true;document.body.classList.remove('nibble-updates-open');const target=opener?.isConnected?opener:document.getElementById('nibbleSettingsBtn');if(target&&target.focus)target.focus()}
+  function acknowledge(){put(KEY,VERSION);put(DISABLE,optout.checked?'1':'0');close()}
+  entry.querySelector('button').addEventListener('click',open);
+  closeButton.addEventListener('click',close);confirmButton.addEventListener('click',acknowledge);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+  overlay.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close()}if(e.key!=='Tab')return;const focus=[closeButton,optout,confirmButton];const i=focus.indexOf(document.activeElement);if(e.shiftKey&&i===0){e.preventDefault();confirmButton.focus()}else if(!e.shiftKey&&i===focus.length-1){e.preventDefault();closeButton.focus()}});
+  window.NibbleSpotUpdates={open,acknowledge};
+  if(get(DISABLE)!=='1'&&get(KEY)!==VERSION)window.setTimeout(()=>{if(!overlay.hidden||!document.getElementById('nibbleSettingsOverlay')?.hidden)return;open()},850);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();
+})();
