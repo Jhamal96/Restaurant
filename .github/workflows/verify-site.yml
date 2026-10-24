@@ -47,10 +47,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --silent --show-error --fail-with-body --max-time 55 \
+          curl --silent --show-error --max-time 55 \
             -H 'Content-Type: application/json' \
             -d '{"location":"Miami, FL","q":"pizza in Miami"}' \
             'https://restaurant.ajdapp.org/api/ai-search' -o ai.json
+          cat ai.json
+          echo
           python3 - <<'PY'
           import json
           d=json.load(open('ai.json'))
