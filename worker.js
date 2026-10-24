@@ -143,7 +143,7 @@ async function restaurantSearch(request,env,isAI){
      if(typeof obj.location==='string'&&obj.location.length<=100)location=text(obj.location)||location;
      if(typeof obj.cuisine==='string'&&obj.cuisine.length<=80)q=text(obj.cuisine);
      aiNote='✦ AI interpreted your request'+(obj.vibe?' ('+text(obj.vibe,65)+')':'')+'.';
-   } catch(e){aiNote='AI is temporarily unavailable, so we used a regular restaurant search.';}
+   } catch(e){aiNote='AI is temporarily unavailable ('+text(e?.name||'Error',40)+': '+text(e?.message||'unknown failure',100)+'). We used a regular restaurant search.';}
  }
  // Even when inference is unavailable, keep a city mentioned in a natural-language query.
  const inCity=q.match(/^(.*?)\s+in\s+([^,]+(?:,\s*[a-zA-Z]{2,})?)$/i);
