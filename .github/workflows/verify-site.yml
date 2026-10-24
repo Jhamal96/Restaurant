@@ -180,6 +180,35 @@ jobs:
           print('Autocomplete verified:',[x['label'] for x in places[:5]])
           PY
 
+      - name: Check precise location and restaurant-name suggestions
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 2 --retry-delay 1 --max-time 30 "https://restaurant.ajdapp.org/api/locations?q=Miami%20Beach" -o precise-places.json
+          curl -fsSL --retry 2 --retry-delay 1 --max-time 30 "https://restaurant.ajdapp.org/api/restaurant-suggestions?q=pizza&location=Miami%2C%20FL" -o nearby-name-suggestions.json
+          curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/app.js" -o precise-app.js
+          curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/" -o precise-index.html
+          node --check precise-app.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          places=json.loads(Path('precise-places.json').read_text())
+          shops=json.loads(Path('nearby-name-suggestions.json').read_text())
+          assert isinstance(places.get('suggestions'),list),places
+          assert isinstance(shops.get('suggestions'),list),shops
+          assert all({'lat','lon','name','address','id'} <= item.keys() for item in shops['suggestions']),shops
+          app=Path('precise-app.js').read_text()
+          page=Path('precise-index.html').read_text()
+          assert '/api/restaurant-suggestions?' in app
+          assert 'chooseRestaurantSuggestion' in app
+          assert 'role="combobox"' in page and 'id="restaurantSuggestions"' in page
+          assert 'ZIP code' in page and 'street address' in page
+          assert 'ArrowDown' in app and 'ArrowUp' in app
+          print('City and address suggestions:',len(places['suggestions']))
+          print('Actual restaurant name suggestions:',len(shops['suggestions']))
+          print('Sample restaurant names:',[s['name'] for s in shops['suggestions'][:5]])
+          PY
+
       - name: Check restaurant search result
         shell: bash
         run: |
