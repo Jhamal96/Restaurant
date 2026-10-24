@@ -1,0 +1,49 @@
+name: Build NibbleSpot Android APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build-android-apk.yml'
+  workflow_dispatch:
+concurrency:
+  group: nibblespot-apk-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build Android debug APK
+        working-directory: android
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NibbleSpot-Android-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Publish Android test APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk NibbleSpot-Android.apk
+          gh release create "android-build-${{ github.run_number }}" NibbleSpot-Android.apk \
+            --target "${{ github.sha }}" \
+            --title "NibbleSpot Android build #${{ github.run_number }}" \
+            --notes "Unsigned-by-store DEBUG APK for testing, not a Play Store release. Android may require permission to install from this source." \
+            --latest
