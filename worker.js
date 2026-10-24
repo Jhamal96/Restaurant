@@ -140,11 +140,9 @@ async function restaurantSearch(request,env,isAI){
  if(inCity){q=text(inCity[1],70);location=text(inCity[2],100)||location;}
  const foodKeyword=q.match(/\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\b/i);
  if(foodKeyword&&keywords(q).length>1)q=foodKeyword[1];
- // Keep explicit cuisine/location from the original request if the LLM returns an unexpected suggestion.
- if(isAI && /(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)/i.test(text(args.q,150))) {
-   q=text(args.q,150).match(/(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)/i)[1];
- }
-
+ // Keep explicit cuisine from the user's request if the AI returns an unrelated interpretation.
+ const explicitCuisine=text(args.q,150).match(/\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\b/i);
+ if(isAI && explicitCuisine)q=explicitCuisine[1];
  try{
   const coords=lat!==null&&lon!==null?[lat,lon]:await resolveLocation(location);
   const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
