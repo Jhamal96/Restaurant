@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 const types = {
   'index.html':'text/html; charset=utf-8',
   'app.js':'application/javascript; charset=utf-8',
+  'install-state.js':'application/javascript; charset=utf-8',
   'icon.svg':'image/svg+xml',
   'manifest.webmanifest':'application/manifest+json',
   'sw.js':'application/javascript; charset=utf-8',
