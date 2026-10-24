@@ -49,16 +49,58 @@ function makeSpot(el,loc){
  const website=text(t.website||t['contact:website']||'',250);
  return {id:'osm-'+el.type+'-'+el.id,name,cuisine,location:loc,address,lat,lon,phone:text(t.phone||t['contact:phone']||'',45),hours,website:/^https?:\/\//i.test(website)?website:'',price:'',rating:null,recScore:'',tags,aiInsight:'Listed on OpenStreetMap. '+(cuisine!=='Restaurant'?'Cuisine: '+cuisine+'. ':'')+'Check the restaurant for current details.',menu:[]};
 }
+// Overpass provides detailed OSM listings. Photon offers a smaller, faster OSM fallback.
 const fallbackHost=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-async function nearby(lat,lon,location) {
+function withinKm(a,b,c,d){
+ const toRad=Math.PI/180, dl=(c-a)*toRad, dn=(d-b)*toRad;
+ return 6371*2*Math.asin(Math.min(1,Math.sqrt(Math.sin(dl/2)**2+Math.cos(a*toRad)*Math.cos(c*toRad)*Math.sin(dn/2)**2)));
+}
+async function photonRestaurants(lat,lon,location,q){
+ const terms=[text(q,70).trim(), 'restaurant'].filter(Boolean);
+ let features=[];
+ for(const term of terms){
+   const params=new URLSearchParams({q:term,lat:String(lat),lon:String(lon),limit:'50',lang:'en'});
+   params.append('osm_tag','amenity:restaurant');
+   params.append('osm_tag','amenity:cafe');
+   try {
+     const d=await apiFetch('https://photon.komoot.io/api/?'+params.toString(),{},8500);
+     features=d.features||[];
+     if(features.length)break;
+   }catch(e){ /* One unavailable public endpoint must not erase saved places. */ }
+ }
+ const seen=new Set(),spots=[];
+ for(const f of features){
+   const p=f.properties||{},coord=f.geometry?.coordinates||[];
+   if(!Array.isArray(coord)||coord.length<2||!p.name||!['restaurant','cafe','fast_food'].includes(p.osm_value))continue;
+   const lo=Number(coord[0]),la=Number(coord[1]);
+   if(!Number.isFinite(lo)||!Number.isFinite(la)||withinKm(lat,lon,la,lo)>27)continue;
+   const address=[p.housenumber,p.street,p.city||p.locality,p.state].filter(Boolean).join(' ')||location;
+   const item={
+      id:'osm-'+(p.osm_type||'N')+'-'+(p.osm_id||la+'-'+lo),
+      name:text(p.name,120),
+      location,cuisine:p.osm_value==='cafe'?'Cafe':'Restaurant',
+      address,lat:la,lon:lo,website:'',phone:'',hours:'',
+      price:'',rating:null,recScore:'',tags:[p.osm_value==='cafe'?'Cafe':'Restaurant'],
+      aiInsight:'Real OpenStreetMap place listing via Photon. Check current details before visiting.',menu:[]
+   };
+   const key=normalize(item.name)+'|'+normalize(item.address);
+   if(!seen.has(key)){spots.push(item);seen.add(key)}
+ }
+ return spots;
+}
+async function nearby(lat,lon,location,q='') {
  const radius=6600;
- const query='[out:json][timeout:20];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 130;';
+ const query='[out:json][timeout:18];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 130;';
  let data=null,error=null;
  for(const url of fallbackHost){
-  try {data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},15000);break}
+  try {data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},8500);break}
   catch(e){error=e}
  }
- if(!data)throw Error('OpenStreetMap search is temporarily busy. Please try again. '+(error?.message||''));
+ if(!data){
+   const results=await photonRestaurants(lat,lon,location,q);
+   if(!results.length)throw Error('Restaurant providers are temporarily busy. Try again soon. '+(error?.message||''));
+   return results;
+ }
  const spots=(data.elements||[]).map(e=>makeSpot(e,location)).filter(Boolean);
  const seen=new Set();
  return spots.filter(s=>{const key=normalize(s.name)+'|'+normalize(s.address);if(seen.has(key))return false;seen.add(key);return true}).slice(0,110);
@@ -95,12 +137,12 @@ async function restaurantSearch(request,env,isAI){
  }
  try{
   const coords=lat!==null&&lon!==null?[lat,lon]:await resolveLocation(location);
-  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4));
+  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
   const cache=caches.default;let spots;
   const hit=await cache.match(cacheKey);
   if(hit){spots=await hit.json()}
   else{
-    spots=await nearby(coords[0],coords[1],location);
+    spots=await nearby(coords[0],coords[1],location,q);
     const copy=new Response(JSON.stringify(spots),{headers:{'Content-Type':'application/json','Cache-Control':'public,max-age=1800'}});
     await cache.put(cacheKey,copy);
   }
