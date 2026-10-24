@@ -572,6 +572,13 @@
       .search-input-group #geoBtn{grid-column:1/-1}
     }
 
+
+    .search-input-group .btn-map {white-space:nowrap}
+    .action-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .action-row .link-btn {display:flex;align-items:center;justify-content:center;min-width:0;text-align:center;text-decoration:none;line-height:1.25}
+    .btn-apple {background:#5e7688;color:#fff}
+    .btn-google {background:#55765a;color:#fff}
+    @media(max-width:720px){.search-input-group .btn-map{grid-column:auto}.search-input-group a.btn-map{grid-column:1/-1}}
   </style>
 </head>
 
@@ -618,11 +625,12 @@
       </div>
     </div>
     <div class="search-input-group">
-      <input aria-label="City or destination" type="text" id="cityInput" placeholder="City or destination (e.g. Miami, FL)" value="Hollywood, FL">
-      <input aria-label="Cuisine or restaurant name" type="search" id="aiSearchInput" placeholder="Cuisine, restaurant, or craving…">
+      <input aria-label="City or destination" type="text" autocapitalize="words" id="cityInput" placeholder="City or destination (e.g. Miami, FL)" value="Hollywood, FL">
+      <input aria-label="Cuisine or restaurant name" type="search" autocapitalize="words" id="aiSearchInput" placeholder="Cuisine, restaurant, or craving…">
       <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Find restaurants</button>
       <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
+      <button class="btn btn-map" type="button" onclick="openAppleMapsSearch()" title="Find restaurants in Apple Maps" aria-label="Search restaurants in Apple Maps">🍎 Apple Maps Search</button>
       <a href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
     </div>
     <div class="filter-bar" aria-label="Filter restaurant ideas">
@@ -687,10 +695,10 @@
       <h2 style="margin:8px 0 4px">Add to our list ♡</h2>
       <p class="form-help">Found a restaurant on Maps or while travelling? Add it here and keep it under its city.</p>
       <form id="customSpotForm" onsubmit="event.preventDefault();saveCustomSpot()">
-        <label class="form-field">Restaurant name *<input id="newSpotName" required maxlength="100" placeholder="e.g. The little Italian place"></label>
-        <label class="form-field">City or destination *<input id="newSpotLocation" required maxlength="100" placeholder="e.g. Miami, FL"></label>
-        <label class="form-field">Cuisine (optional)<input id="newSpotCuisine" maxlength="70" placeholder="e.g. Italian, Brunch, Seafood"></label>
-        <label class="form-field">Address (optional)<input id="newSpotAddress" maxlength="170" placeholder="Street or neighborhood"></label>
+        <label class="form-field">Restaurant name *<input id="newSpotName" autocapitalize="words" required maxlength="100" placeholder="e.g. The little Italian place"></label>
+        <label class="form-field">City or destination *<input id="newSpotLocation" autocapitalize="words" required maxlength="100" placeholder="e.g. Miami, FL"></label>
+        <label class="form-field">Cuisine (optional)<input id="newSpotCuisine" autocapitalize="words" maxlength="70" placeholder="e.g. Italian, Brunch, Seafood"></label>
+        <label class="form-field">Address (optional)<input id="newSpotAddress" autocapitalize="words" maxlength="170" placeholder="Street or neighborhood"></label>
         <button class="btn btn-ai" type="submit" style="width:100%;margin-top:9px">♡ Save this restaurant</button>
       </form>
     </div>
