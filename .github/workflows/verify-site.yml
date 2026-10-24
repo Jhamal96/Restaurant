@@ -35,7 +35,12 @@ jobs:
           curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/install-state.js" -o install-state.js
           curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/" -o installed-home.html
           curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/download" -o installed-download.html
-          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/sw.js" -o installed-sw.js
+          for attempt in 1 2 3 4 5 6; do
+            curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/sw.js?verify=install-aware-v3" -o installed-sw.js
+            if grep -q "/install-state.js" installed-sw.js; then break; fi
+            echo "Waiting for latest service worker deployment..."
+            sleep 3
+          done
           node --check install-state.js
           node <<'NODE'
           const fs=require('fs'),vm=require('vm'),assert=require('assert');
