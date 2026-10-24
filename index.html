@@ -579,6 +579,31 @@
     .btn-apple {background:#5e7688;color:#fff}
     .btn-google {background:#55765a;color:#fff}
     @media(max-width:720px){.search-input-group .btn-map{grid-column:auto}.search-input-group a.btn-map{grid-column:1/-1}}
+
+    /* Google-style location suggestions, styled to match NibbleSpot's cozy palette. */
+    .search-input-group .location-field {position:relative;flex:.7 1 225px;min-width:210px;isolation:isolate;z-index:30}
+    .search-input-group .location-field #cityInput {width:100%;min-width:0;max-width:100%;height:100%;min-height:44px;flex:none;padding-right:38px}
+    .location-field::after {content:"⌄";position:absolute;right:14px;top:13px;line-height:1;font-size:21px;color:#ae806c;pointer-events:none}
+    .location-suggestions {position:absolute;z-index:60;left:0;right:0;top:calc(100% + 7px);border:1px solid #e6d5c7;
+      border-radius:17px;box-shadow:0 19px 44px #4e32252a,0 5px 12px #4e322511;background:#fffdf9;overflow-y:auto;
+      max-height:min(390px,63vh);padding:8px;min-width:290px;text-align:left}
+    .location-suggestions[hidden] {display:none!important}
+    .location-header {padding:8px 11px 10px;color:#a27660;font-size:10px;letter-spacing:1.5px;font-weight:800}
+    .location-option {display:flex;align-items:center;width:100%;gap:12px;border:none;background:transparent;color:#48352c;
+      border-radius:11px;cursor:pointer;text-align:left;padding:11px;transition:background-color .12s ease;font:inherit}
+    .location-option:hover,.location-option.active,.location-option:focus-visible {background:#f6e8da;outline:none}
+    .location-pin {height:34px;width:34px;flex:0 0 34px;display:grid;place-items:center;background:#f7e6d7;
+      color:#a45e46;border-radius:10px;font-size:20px}
+    .location-option-text {display:flex;flex-direction:column;gap:3px;min-width:0}
+    .location-option-text strong {font-size:13px;font-weight:750;overflow-wrap:anywhere}
+    .location-option-text small {color:#957568;font-size:11px;line-height:1.3}
+    .location-status {padding:16px 12px;color:#8a7568;font-size:12px}
+    .location-attribution {border-top:1px solid #f1e7de;margin-top:5px;padding:9px 10px 4px;font-size:10px;color:#a58d7d}
+    @media(max-width:720px){
+      .search-input-group .location-field {grid-column:1/-1;min-width:0;width:100%}
+      .location-suggestions {min-width:0;max-height:57vh}
+      .search-input-group .location-field #cityInput {min-width:0}
+    }
   </style>
 </head>
 
@@ -621,11 +646,14 @@
       <div>
         <div class="eyebrow">A LITTLE SOMETHING DELICIOUS</div>
         <h2>Where should we eat?</h2>
-        <p class="subcopy">Search real restaurants inside NibbleSpot — any city, any craving. AI can help with natural-language requests.</p>
+        <p class="subcopy">Start typing a city or neighborhood to see matching destinations as you type. Select one to explore restaurants, or search any craving with AI.</p>
       </div>
     </div>
     <div class="search-input-group">
-      <input aria-label="City or destination" type="text" autocapitalize="words" id="cityInput" placeholder="City or destination (e.g. Miami, FL)" value="Hollywood, FL">
+      <div class="location-field" id="locationField">
+        <input aria-label="City or destination" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="locationSuggestions" aria-expanded="false" autocomplete="off" type="text" autocapitalize="words" id="cityInput" placeholder="Start typing a city or neighborhood…" value="Hollywood, FL">
+        <div class="location-suggestions" id="locationSuggestions" role="listbox" aria-label="Suggested cities and areas" hidden></div>
+      </div>
       <input aria-label="Cuisine or restaurant name" type="search" autocapitalize="words" id="aiSearchInput" placeholder="Cuisine, restaurant, or craving…">
       <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Find restaurants</button>
       <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
