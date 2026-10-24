@@ -42,3 +42,20 @@ jobs:
           assert isinstance(d.get('results'),list)
           assert d.get('source','').startswith('OpenStreetMap'), d
           PY
+
+      - name: Check AI-powered restaurant search
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail-with-body --max-time 55 \
+            -H 'Content-Type: application/json' \
+            -d '{"location":"Miami, FL","q":"pizza in Miami"}' \
+            'https://restaurant.ajdapp.org/api/ai-search' -o ai.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('ai.json'))
+          print('AI interpretation:',d.get('aiNote'))
+          print('Results:',len(d.get('results',[])))
+          assert isinstance(d.get('results'),list), d
+          assert 'AI interpreted' in d.get('aiNote',''), d.get('aiNote')
+          PY
