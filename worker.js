@@ -89,11 +89,18 @@ async function photonRestaurants(lat,lon,location,q){
  return spots;
 }
 async function nearby(lat,lon,location,q='') {
+ // A targeted Photon search is more responsive for named cuisines than large Overpass area queries.
+ // Photon returns OSM-backed places, so we never fabricate a restaurant.
+ if(q && keywords(q).length) {
+   const direct=await photonRestaurants(lat,lon,location,q);
+   const matching=direct.filter(s=>matchesQuery(s,q));
+   if(matching.length)return matching;
+ }
  const radius=6600;
  const query='[out:json][timeout:18];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 130;';
  let data=null,error=null;
  for(const url of fallbackHost){
-  try {data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},8500);break}
+  try {data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},6500);break}
   catch(e){error=e}
  }
  if(!data){
