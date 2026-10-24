@@ -26,6 +26,75 @@ async function apiFetch(url,opts={},ms=11000){
  try {const response=await fetch(url,{...opts,signal:ac.signal,headers:{'Accept':'application/json','User-Agent':'NibbleSpot-Restaurant-Discovery/1.0 (https://restaurant.ajdapp.org)',...(opts.headers||{})}});if(!response.ok)throw Error('Upstream unavailable: '+response.status);return response.json();}
  finally {clearTimeout(timer)}
 }
+/* Autocomplete is sourced from Photon/OpenStreetMap, with conservative caching
+   to avoid sending the public geocoder a request for every keystroke. */
+const DEFAULT_PLACES=[
+ {name:'Miami',region:'Florida',country:'United States',lat:25.7752,lon:-80.1992,kind:'City'},
+ {name:'Hollywood',region:'Florida',country:'United States',lat:26.0112,lon:-80.1495,kind:'City'},
+ {name:'Fort Lauderdale',region:'Florida',country:'United States',lat:26.1224,lon:-80.1373,kind:'City'},
+ {name:'Orlando',region:'Florida',country:'United States',lat:28.5384,lon:-81.3789,kind:'City'},
+ {name:'Tampa',region:'Florida',country:'United States',lat:27.9506,lon:-82.4572,kind:'City'},
+ {name:'New York',region:'New York',country:'United States',lat:40.7128,lon:-74.006,kind:'City'},
+ {name:'Las Vegas',region:'Nevada',country:'United States',lat:36.1699,lon:-115.1398,kind:'City'},
+ {name:'Atlanta',region:'Georgia',country:'United States',lat:33.749,lon:-84.388,kind:'City'},
+ {name:'Chicago',region:'Illinois',country:'United States',lat:41.8781,lon:-87.6298,kind:'City'},
+ {name:'Los Angeles',region:'California',country:'United States',lat:34.0522,lon:-118.2437,kind:'City'},
+ {name:'San Francisco',region:'California',country:'United States',lat:37.7749,lon:-122.4194,kind:'City'},
+ {name:'Paris',region:'',country:'France',lat:48.8566,lon:2.3522,kind:'City'},
+ {name:'London',region:'England',country:'United Kingdom',lat:51.5072,lon:-0.1276,kind:'City'}
+];
+function makePlace(name,region,country,lat,lon,kind){
+ const n=text(name,100),state=text(region,100),c=text(country,100);
+ const parts=[n,state,c].filter((piece,i,arr)=>piece && arr.findIndex(other=>other.toLocaleLowerCase()===piece.toLocaleLowerCase())===i);
+ return {name:n,label:parts.join(', '),detail:[kind||'Location',state,c].filter(Boolean).join(' · '),
+         kind:kind||'Location',lat:Number(lat),lon:Number(lon)};
+}
+function fallbackLocations(q){
+ const key=normalize(q);
+ return DEFAULT_PLACES.filter(place=>normalize([place.name,place.region,place.country].join(' ')).includes(key))
+  .map(p=>makePlace(p.name,p.region,p.country,p.lat,p.lon,p.kind));
+}
+function convertPhotonPlace(feature){
+ const p=feature?.properties||{},coord=feature?.geometry?.coordinates||[];
+ if(!p.name||coord.length!==2||!Number.isFinite(Number(coord[0]))||!Number.isFinite(Number(coord[1])))return null;
+ const type=String(p.type||p.osm_value||'').toLowerCase();
+ const kind=/country/.test(type)?'Country':/state|province|region/.test(type)?'Region':/district|suburb|locality|neighbou?rhood|quarter/.test(type)?'Neighborhood':/county/.test(type)?'County':'City';
+ const parent=p.city&&String(p.city).toLowerCase()!==String(p.name).toLowerCase()?p.city:p.state;
+ const region=p.state&&String(p.state).toLowerCase()!==String(parent||'').toLowerCase()&&String(p.state).toLowerCase()!==String(p.name).toLowerCase()?[parent,p.state].filter(Boolean).join(', '):parent;
+ return makePlace(p.name,region,p.country,coord[1],coord[0],kind);
+}
+async function locationSuggestions(request){
+ const raw=new URL(request.url).searchParams.get('q')||'';
+ const query=text(raw,90);
+ if(query.length<2)return json({suggestions:[],message:'Type at least two letters to see places.'});
+ const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/locations?q='+encodeURIComponent(normalize(query)));
+ const cache=caches.default;
+ const hit=await cache.match(cacheKey);
+ if(hit)return hit;
+ let matched=[],source='OpenStreetMap · Photon',message='';
+ try{
+   const params=new URLSearchParams({q:query,lang:'en',limit:'15'});
+   for(const layer of ['city','district','locality','county','state','country'])params.append('layer',layer);
+   const data=await apiFetch('https://photon.komoot.io/api/?'+params.toString(),{},7000);
+   matched=(data.features||[]).map(convertPhotonPlace).filter(Boolean);
+ }catch(error){
+   source='Popular destinations';
+   message='Live suggestions are temporarily unavailable. Showing familiar destinations.';
+ }
+ const seen=new Set(),suggestions=[];
+ for(const place of [...matched,...fallbackLocations(query)]){
+   if(!place || !Number.isFinite(place.lat)||!Number.isFinite(place.lon))continue;
+   const key=normalize(place.label);
+   if(!key||seen.has(key))continue;
+   seen.add(key);suggestions.push(place);
+   if(suggestions.length>=7)break;
+ }
+ const response=json({suggestions,source,message});
+ response.headers.set('cache-control','public,max-age=900');
+ await cache.put(cacheKey,response.clone());
+ return response;
+}
+
 async function resolveLocation(location) {
  const known=locateKnown(location);
  if(known)return known;
@@ -174,6 +243,7 @@ async function restaurantSearch(request,env,isAI){
 export default {async fetch(request,env){
  const url=new URL(request.url);let path=url.pathname;
  if(path==='/api/health')return json({ok:true,service:'NibbleSpot',search:'Overpass/Photon',ai:!!env.AI,version:'2026.10.24'});
+ if(path==='/api/locations'&&request.method==='GET')return locationSuggestions(request);
  if(path==='/api/search'&&request.method==='GET')return restaurantSearch(request,env,false);
  if(path==='/api/ai-search'&&request.method==='POST')return restaurantSearch(request,env,true);
  if(path.startsWith('/api/'))return json({error:'Not found'},404);
