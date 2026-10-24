@@ -28,13 +28,36 @@ jobs:
           assert d.get('ok') is True, d
           assert d.get('ai') is True, 'Missing AI binding'
           PY
+      - name: Verify Apple Maps, auto-capitalization and desktop download page
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/app.js" -o app.js
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/" -o index.html
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/download" -o download.html
+          node --check app.js
+          python3 - <<'PY'
+          from pathlib import Path
+          a=Path('app.js').read_text()
+          i=Path('index.html').read_text()
+          d=Path('download.html').read_text()
+          assert 'function autoCapitalizeWords' in a, 'Missing input capitalization'
+          assert 'function openAppleMapsSearch' in a and 'maps.apple.com' in a
+          assert '🍎 Apple Maps' in a, 'No Apple Maps restaurant card link'
+          assert "links.append(map,apple,book)" in a, 'No Apple Maps saved link'
+          assert 'Apple Maps Search' in i, 'No Apple Maps search control'
+          for name in ('NibbleSpot-Windows-Setup.exe','NibbleSpot-macOS.dmg','NibbleSpot-Android.apk'):
+              assert name in d, 'Missing downloadable option: '+name
+          assert 'data-platform="mac"' in d and 'data-platform="windows"' in d
+          print('Live UI contains working app JavaScript, Apple Maps and cross-platform download choices.')
+          PY
+
       - name: Check restaurant search result
         shell: bash
         run: |
           set -euo pipefail
           curl --silent --show-error --max-time 55 "https://restaurant.ajdapp.org/api/search?location=Miami%2C%20FL&q=pizza" -o search.json
-          cat search.json
-          echo
+          echo "Restaurant search response received."
           python3 - <<'PY'
           import json
           d=json.load(open('search.json'))
@@ -51,8 +74,7 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"location":"Miami, FL","q":"pizza in Miami"}' \
             'https://restaurant.ajdapp.org/api/ai-search' -o ai.json
-          cat ai.json
-          echo
+          echo "AI search response received."
           python3 - <<'PY'
           import json
           d=json.load(open('ai.json'))
