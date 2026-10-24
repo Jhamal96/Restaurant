@@ -133,7 +133,7 @@ async function restaurantSearch(request,env,isAI){
    recent.push(now);AI_USAGE.set(key,recent);
    try {
      if(!env.AI)throw Error('AI binding is not enabled');
-     const answer=await env.AI.run('@cf/meta/llama-3.1-8b-instruct',{
+     const answer=await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',{
        messages:[{role:'system',content:'Extract restaurant search criteria. Return ONLY a JSON object with keys "location", "cuisine", "vibe". The location must be a real named city if the user mentions one; otherwise use the fallback city. Cuisine must be 1-2 cuisine keywords if explicit, otherwise blank. Vibe can be 3-8 words describing atmosphere. Never invent restaurant names, ratings or facts.'},
         {role:'user',content:'Fallback city: '+location+'; restaurant request: '+q}],max_tokens:175,temperature:0.1});
      // Workers AI currently returns response as structured JSON, but some model variants emit text.
@@ -143,7 +143,7 @@ async function restaurantSearch(request,env,isAI){
      if(typeof obj.location==='string'&&obj.location.length<=100)location=text(obj.location)||location;
      if(typeof obj.cuisine==='string'&&obj.cuisine.length<=80)q=text(obj.cuisine);
      aiNote='✦ AI interpreted your request'+(obj.vibe?' ('+text(obj.vibe,65)+')':'')+'.';
-   } catch(e){aiNote='AI is temporarily unavailable ('+text(e?.name||'Error',40)+': '+text(e?.message||'unknown failure',100)+'). We used a regular restaurant search.';}
+   } catch(e){aiNote='AI is temporarily unavailable, so we used a regular restaurant search.';}
  }
  // Even when inference is unavailable, keep a city mentioned in a natural-language query.
  const inCity=q.match(/^(.*?)\s+in\s+([^,]+(?:,\s*[a-zA-Z]{2,})?)$/i);
