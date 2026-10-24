@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NibbleSpot 🍕 AI Foodie Command Center</title>
+  <title>NibbleSpot | Our Table ♡</title>
+  <meta name="theme-color" content="#f9f5ee">
+  <meta name="description" content="Find a place to eat and save restaurants for your next date night or trip together.">
   <style>
     :root {
       --bg: #fffbf0;
@@ -409,96 +411,274 @@
     }
 
     .remove-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-weight: bold; }
+  
+    /* NibbleSpot • Our Table — warm, responsive refresh */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+    :root {
+      --bg:#f9f5ee; --primary:#ad5c45; --secondary:#ead2b9; --accent:#9f6b50;
+      --ai-purple:#986a63; --opentable-red:#a44843; --dark:#352920; --card-bg:#fffdfa;
+      --radius:22px; --apple-blue:#57768e; --google-green:#567463;
+      --muted:#81766e; --stroke:#eee5d9;
+    }
+    html {scroll-behavior:smooth}
+    * {font-family:'DM Sans',system-ui,sans-serif}
+    body {
+      padding:0 28px 36px; background:var(--bg); color:var(--dark); max-width:1380px;
+      background-image:radial-gradient(ellipse at 100% 0%,#f7ebe1 0%,transparent 34%);
+    }
+    a {color:inherit}
+    button, input {font:inherit}
+    button:focus-visible,a:focus-visible,input:focus-visible {outline:3px solid #bf8068;outline-offset:3px}
+    .topbar {display:flex;align-items:center;justify-content:space-between;padding:22px 3px 18px;margin:0;text-align:left;gap:18px}
+    .brand {display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+    .brand-mark {width:43px;height:43px;border-radius:15px;background:#a45843;color:white;display:grid;place-items:center;font-size:23px;box-shadow:0 8px 20px #a4584324}
+    .brand-name {font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:26px;line-height:1}
+    .brand-caption {display:block;color:var(--muted);font-size:10px;letter-spacing:2.4px;font-weight:800;margin-top:5px}
+    .topnav {display:flex;gap:26px;align-items:center}
+    .topnav a {font-size:13px;font-weight:700;text-decoration:none;color:#685b51}
+    .topnav a:hover {color:var(--primary)}
+    .topnav .nav-cta {background:#352920;color:#fff;padding:12px 18px;border-radius:99px;display:inline-flex;align-items:center;gap:8px}
+    .topnav .nav-cta:hover {color:#fff;background:#a45843}
+    .hero {position:relative;min-height:332px;border-radius:30px;overflow:hidden;display:flex;align-items:center;margin-bottom:20px;background:#4c3329}
+    .hero-photo {position:absolute;inset:0;background:linear-gradient(90deg,rgba(40,25,21,.94) 0%,rgba(47,29,23,.82) 42%,rgba(41,26,21,.12) 100%),url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1800&q=85') center/cover}
+    .hero-content {position:relative;z-index:1;padding:49px 53px;color:white;max-width:680px}
+    .eyebrow {font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#ba785f}
+    .hero .eyebrow {color:#eac6ac}
+    .hero h1 {font-family:'Playfair Display',Georgia,serif;font-size:clamp(33px,4vw,57px);line-height:1.14;font-weight:600;letter-spacing:-.8px;margin:12px 0 14px}
+    .hero h1 em {font-weight:500;color:#f4c6a1}
+    .hero p {color:#f3e9e0;font-size:14px;line-height:1.75;max-width:430px}
+    .hero-actions {display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+    .hero-link {display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border-radius:12px;background:#f2d7bc;color:#402b23;text-decoration:none;font-size:13px;font-weight:800}
+    .hero-link.secondary {background:#ffffff20;border:1px solid #ffffff67;color:#fff}
+    .hero-stamp {position:absolute;bottom:20px;right:25px;color:white;background:#ffffff29;border:1px solid #ffffff75;backdrop-filter:blur(10px);border-radius:100px;padding:9px 14px;font-size:12px;letter-spacing:1px;z-index:2}
+    .dashboard-bar {grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 25px}
+    .stat-card {background:#fffaf3;border:1px solid var(--stroke);border-radius:17px;box-shadow:none;padding:17px 19px;text-align:left}
+    .stat-card h4 {font-size:10px;letter-spacing:1.6px;color:#87776a;font-weight:800}
+    .stat-card .value {font-size:21px;font-weight:800;letter-spacing:-.4px;color:var(--dark);margin-top:6px;overflow-wrap:anywhere}
+    .stat-card .stat-icon {font-size:19px;float:right;opacity:.75}
+    .search-container {border:1px solid var(--stroke);border-radius:24px;box-shadow:0 16px 36px #523b2910;background:#fffefa;padding:24px;margin-bottom:28px}
+    .search-head {display:flex;justify-content:space-between;gap:14px;align-items:end;margin-bottom:15px}
+    .search-head h2,.section-title h2 {font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:600;margin:4px 0}
+    .subcopy {font-size:12px;color:var(--muted);line-height:1.5}
+    .search-input-group {gap:9px;align-items:stretch}
+    .search-input-group input {min-width:220px;flex:1;padding:14px 18px;border:1px solid #e6d8ca;background:#fbf7f2;border-radius:13px;font-size:13px}
+    .search-input-group input:focus {border-color:#b37660;background:#fff;box-shadow:0 0 0 4px #b3766017}
+    .btn {background:#e8d2ba;color:#3e2c23;border:1px solid #e6d4c0;box-shadow:none;border-radius:12px;padding:12px 17px;font-size:12px;font-weight:800;transition:background .18s,transform .18s}
+    .btn-ai {background:#a75c46;color:#fff;border-color:#a75c46}
+    .btn-geo {background:#eee6db;color:#5d4738;border-color:#e8dbcd}
+    .btn:hover {box-shadow:0 7px 14px #6b47301c;transform:translateY(-2px)}
+    .btn:active {box-shadow:none;transform:translateY(0)}
+    .filter-bar {margin-top:19px;gap:8px}
+    .filter-chip {font-size:11px;font-weight:700;padding:9px 15px;border:1px solid #ecded2;background:#fff9f3;color:#635345}
+    .filter-chip:hover {border-color:#b77c62}
+    .filter-chip.active {background:#493329;border-color:#493329;color:white}
+    .content-grid {grid-template-columns:minmax(0,1.8fr) minmax(290px,.9fr);gap:23px}
+    .section-title {margin:0 0 15px;gap:10px;align-items:end}
+    .section-title h2 {font-size:28px}
+    .section-title small {color:#947e6d;font-size:11px!important;text-align:right}
+    .results-grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:0}
+    .card {padding:20px;border:1px solid #e9dfd3;border-radius:21px;background:#fffdfa;box-shadow:0 9px 23px #4d35220d;transition:transform .2s,box-shadow .2s;gap:10px}
+    .card:hover {transform:translateY(-3px);box-shadow:0 17px 29px #4d352219}
+    .card h3 {font-family:'Playfair Display',Georgia,serif;font-size:23px;line-height:1.26;font-weight:600;padding-right:38px;margin:7px 0}
+    .card p {font-size:12px;color:#8b7060;line-height:1.6}
+    .card-tag {top:18px;right:18px;border:0;border-radius:8px;background:#f6eee4;color:#a0614d;font-size:12px}
+    .rec-score {border:0;background:#f4e8db;color:#88634d;border-radius:100px;padding:7px 11px;font-size:10px;margin:13px 0 11px}
+    .ai-insight-box {border:0;background:#faf3eb;border-radius:11px;padding:10px 12px;color:#705a4b;font-size:11px;line-height:1.5}
+    .meta-details {font-size:11px;line-height:1.8;color:#6e6359}
+    .badge-pill {border:0;background:#f2eee7;border-radius:100px;padding:4px 8px;font-size:10px;color:#776557;font-weight:600}
+    .card-actions {margin-top:12px;gap:8px}
+    .action-row {gap:8px}
+    .link-btn {border:0;border-radius:11px;padding:11px 9px;font-size:11px;min-height:39px;transition:filter .2s}
+    .link-btn:hover {filter:brightness(.9)}
+    .btn-opentable {background:#915345}
+    .btn-menu {background:#efdfcf;color:#604738}
+    .btn-google {background:#52725c}
+    .btn-apple {background:#557389}
+    .card-footer {border-top:1px solid #f1e9df;margin-top:12px;padding-top:12px}
+    .card-footer small {font-size:11px}
+    .save-btn {border:1px solid #ead8cb;background:#fffaf5;color:#a75c46;width:38px;height:38px;box-shadow:none}
+    .save-btn.saved {border-color:#a75c46;background:#a75c46;color:white}
+    .side-stack {gap:18px}
+    .side-panel {background:#fffefa;border:1px solid var(--stroke);border-radius:22px;box-shadow:0 9px 21px #5138210b;padding:22px}
+    .side-panel h3 {font-family:'Playfair Display',Georgia,serif;font-size:23px;font-weight:600;margin:4px 0 12px}
+    .side-panel .side-caption {font-size:11px;color:#a45f48;letter-spacing:1.8px;text-transform:uppercase;font-weight:800}
+    .side-panel.intro-panel {background:#f1e3d2}
+    .side-panel.intro-panel p {font-size:12px;color:#6d5749;line-height:1.75}
+    .tabs-container {border-bottom:1px solid #ede2d5}
+    .tab-btn {border:1px solid #ebded2;background:#fff6ec;color:#695344;padding:8px 13px;font-size:11px}
+    .tab-btn.active {background:#ad5c45;color:#fff;border-color:#ad5c45}
+    .saved-item {gap:12px;border-bottom:1px solid #f1e9df;padding:13px 0}
+    .saved-item strong {font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600}
+    .saved-item small {font-size:11px}
+    .saved-item a {text-decoration:none}
+    .remove-btn {color:#a45843;font-size:12px}
+    .save-note {font-size:11px;line-height:1.7;color:#897568;background:#fcf6ef;padding:12px;border-radius:11px;margin-top:13px}
+    .inline-link {background:none;border:0;color:#9e553f;font-size:11px;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+    .modal-overlay {background:#231a17b5;backdrop-filter:blur(5px)}
+    .modal-content {max-width:540px;background:#fffaf4;border:1px solid #eadacb;border-radius:24px;box-shadow:0 30px 60px #231a1755;padding:27px}
+    .modal-content h2 {font-family:'Playfair Display',Georgia,serif;font-size:28px}
+    .close-modal {border:0;background:#f2dfd1;color:#6f4637;width:35px;height:35px}
+    .menu-item {border-bottom:1px dashed #e7d8cb}
+    .form-field {display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:700;color:#776254;margin:13px 0}
+    .form-field input {border:1px solid #e5d6c6;background:white;border-radius:11px;padding:13px;font-size:13px;min-width:0}
+    .form-help {font-size:11px;color:#8b786b;line-height:1.5;margin-bottom:11px}
+    .empty-state {grid-column:1/-1;min-height:190px;display:grid;place-items:center;text-align:center;background:#fff9f2;border:1px dashed #d6b7a0;border-radius:20px;padding:25px;color:#806e60}
+    footer {text-align:center;color:#958476;font-size:11px;padding:29px 10px 5px}
+    @media (max-width:1020px) {.content-grid{grid-template-columns:1fr}.side-stack{display:grid;grid-template-columns:1fr 1.2fr}}
+    @media (max-width:720px) {
+      body{padding:0 14px 25px}
+      .topbar{padding:16px 2px}
+      .brand-name{font-size:22px}
+      .brand-mark{width:38px;height:38px}
+      .topnav{gap:9px}
+      .topnav a:not(.nav-cta){display:none}
+      .topnav .nav-cta{padding:10px 13px;font-size:11px}
+      .hero{min-height:355px;border-radius:23px;align-items:end}
+      .hero-photo{background:linear-gradient(0deg,#32211fec 0%,#32211fb3 51%,#32211f20 100%),url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=850&q=80') center/cover}
+      .hero-content{padding:32px 24px 49px}
+      .hero h1{font-size:36px}
+      .hero-stamp{bottom:12px;right:16px;font-size:9px;padding:6px 10px}
+      .dashboard-bar{gap:8px}
+      .stat-card{padding:14px 12px}
+      .stat-card h4{font-size:9px;letter-spacing:.6px}
+      .stat-card .value{font-size:15px}
+      .stat-card .stat-icon{display:none}
+      .search-container{padding:18px}
+      .search-input-group{display:grid;grid-template-columns:1fr 1fr}
+      .search-input-group input{grid-column:1/-1;min-width:0}
+      .search-input-group .btn{padding:11px 8px;font-size:11px}
+      .search-input-group .btn-map {grid-column:1/-1}
+      .results-grid{grid-template-columns:1fr}
+      .side-stack{grid-template-columns:1fr}
+      .section-title{align-items:start;flex-direction:column}
+      .section-title h2{font-size:26px}
+    }
+    @media (prefers-reduced-motion:reduce) {html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
+
   </style>
 </head>
-<body>
 
-  <header>
-    <h1>NibbleSpot AI</h1>
-    <p>Smart Foodie Command Center & Spot Recommender</p>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="NibbleSpot home">
+      <span class="brand-mark">✦</span>
+      <span><span class="brand-name">NibbleSpot</span><span class="brand-caption">OUR TABLE · OUR ADVENTURES</span></span>
+    </a>
+    <nav class="topnav" aria-label="Main navigation">
+      <a href="#discover">Discover</a>
+      <a href="#our-list">Saved places</a>
+      <a href="#our-list" class="nav-cta">♡ Our little list</a>
+    </nav>
   </header>
 
-  <div class="dashboard-bar">
-    <div class="stat-card">
-      <h4>Active Region</h4>
-      <div class="value" id="statLoc">Hollywood, FL</div>
+  <section class="hero" aria-label="Welcome to NibbleSpot">
+    <div class="hero-photo" role="img" aria-label="Cozy restaurant interior"></div>
+    <div class="hero-content">
+      <div class="eyebrow">FOR EVERY CRAVING & EVERY OCCASION</div>
+      <h1>Good food.<br><em>Beautiful memories.</em></h1>
+      <p>Your little corner for food adventures together. Find somewhere lovely for tonight, or tuck away a place for your next trip.</p>
+      <div class="hero-actions">
+        <a class="hero-link" href="#discover">Explore restaurants ↗</a>
+        <a class="hero-link secondary" href="#our-list">♡ Our saved spots</a>
+      </div>
     </div>
-    <div class="stat-card">
-      <h4>Eats Discovered</h4>
-      <div class="value" id="statCount">0</div>
-    </div>
-    <div class="stat-card">
-      <h4>Avg Community Rating</h4>
-      <div class="value" id="statRating">4.7 ⭐</div>
-    </div>
-    <div class="stat-card">
-      <h4>Top AI Match</h4>
-      <div class="value" id="statMatch" style="color:var(--ai-purple)">99%</div>
-    </div>
-  </div>
+    <div class="hero-stamp">♡ MADE FOR TWO</div>
+  </section>
 
-  <div class="search-container">
+  <div class="dashboard-bar" aria-label="Your restaurant dashboard">
+    <div class="stat-card"><span class="stat-icon">📍</span><h4>Exploring</h4><div class="value" id="statLoc">Hollywood, FL</div></div>
+    <div class="stat-card"><span class="stat-icon">✦</span><h4>Ideas on screen</h4><div class="value" id="statCount">0</div></div>
+    <div class="stat-card"><span class="stat-icon">♡</span><h4>Places we love</h4><div class="value" id="savedTotal">0</div></div>
+  </div>
+  <span id="statRating" hidden></span><span id="statMatch" hidden></span>
+
+  <section class="search-container" id="discover">
+    <div class="search-head">
+      <div>
+        <div class="eyebrow">A LITTLE SOMETHING DELICIOUS</div>
+        <h2>Where should we eat?</h2>
+        <p class="subcopy">Try “Tacos in Miami”, “Sushi in New York”, or a city you’re visiting.</p>
+      </div>
+    </div>
     <div class="search-input-group">
-      <input type="text" id="aiSearchInput" placeholder="🤖 Search food or area: e.g. 'Tacos in Miami', 'Pizza', 'Downtown Hollywood FL'">
-      <button class="btn btn-ai" onclick="runAiSmartSearch()">🤖 AI Search</button>
-      <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">📍 Locate Me</button>
+      <input aria-label="Restaurant or location search" type="search" id="aiSearchInput" placeholder="A city, cuisine, or craving…">
+      <button class="btn btn-ai" onclick="runAiSmartSearch()">⌕ Preview ideas</button>
+      <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
+      <button class="btn btn-map" onclick="openLiveSearch()">↗ Search Google Maps</button>
     </div>
-
-    <div class="filter-bar">
-      <span class="filter-chip active" onclick="setFilter(this, 'all')">All Cuisines</span>
-      <span class="filter-chip" onclick="setFilter(this, 'cafe')">☕ Cafe & Breakfast</span>
-      <span class="filter-chip" onclick="setFilter(this, 'seafood')">🦀 Seafood</span>
-      <span class="filter-chip" onclick="setFilter(this, 'tacos')">🌮 Tacos</span>
-      <span class="filter-chip" onclick="setFilter(this, 'pizza')">🍕 Pizza</span>
-      <span class="filter-chip" onclick="setFilter(this, 'mediterranean')">🥙 Mediterranean</span>
-      <span class="filter-chip" onclick="setFilter(this, 'high-rating')">⭐ 4.7+ Rating</span>
-      <span class="filter-chip" onclick="setFilter(this, 'budget')">💲 $ / $$ Only</span>
+    <div class="filter-bar" aria-label="Filter restaurant ideas">
+      <button class="filter-chip active" onclick="setFilter(this, 'all')">All ideas</button>
+      <button class="filter-chip" onclick="setFilter(this, 'cafe')">☕ Breakfast & cafes</button>
+      <button class="filter-chip" onclick="setFilter(this, 'seafood')">🦐 Seafood</button>
+      <button class="filter-chip" onclick="setFilter(this, 'tacos')">🌮 Tacos</button>
+      <button class="filter-chip" onclick="setFilter(this, 'pizza')">🍕 Pizza</button>
+      <button class="filter-chip" onclick="setFilter(this, 'mediterranean')">🥙 Mediterranean</button>
+      <button class="filter-chip" onclick="setFilter(this, 'high-rating')">⭐ Sample 4.7+</button>
+      <button class="filter-chip" onclick="setFilter(this, 'budget')">💸 $ / $</button>
     </div>
-  </div>
+  </section>
 
   <div class="content-grid">
-    <div>
+    <section aria-label="Restaurant suggestions">
       <div class="section-title">
-        <span>📍 Discovered Spots in <strong id="currentLoc" style="color:var(--primary)">Hollywood, FL</strong></span>
-        <small style="font-size:0.85rem; color:#666;" id="aiParsingTag">✨ AI Active Parsing</small>
+        <div><div class="eyebrow">A PLACE WORTH TRYING</div><h2>Ideas around <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span></h2></div>
+        <small id="aiParsingTag">Sample ideas · verify before visiting</small>
       </div>
-
       <div class="results-grid" id="resultsContainer"></div>
-
-      <div style="text-align: center; margin-top: 1rem;">
-        <button class="btn" id="loadMoreBtn" style="display: none;" onclick="loadMore()">✨ Load More Eats</button>
+      <div style="text-align:center; margin-top:18px">
+        <button class="btn" id="loadMoreBtn" style="display:none" onclick="loadMore()">Show more ideas ↓</button>
       </div>
-    </div>
+    </section>
 
-    <div class="side-stack">
-      <div class="side-panel" style="background: #f3e8ff;">
-        <h3 style="margin-bottom: 8px;">✨ AI Smart Summary</h3>
-        <p style="font-size: 0.85rem; color: #444; line-height: 1.4;" id="aiSummaryBox">
-          Showing top local options for this region. Search any keyword or city to generate custom recommendations.
-        </p>
+    <aside class="side-stack">
+      <div class="side-panel intro-panel">
+        <div class="side-caption">THE LITTLE DATE-NIGHT GUIDE</div>
+        <h3>Let's make a plan ♡</h3>
+        <p id="aiSummaryBox">These are inspiration ideas, not verified live restaurant listings. For accurate places, hours, ratings and menus in any city, use Search Google Maps, then save your favorites here.</p>
+        <button class="btn" style="margin-top:15px;background:#fff7ec;border-color:#d9c4af" onclick="openAddSpotModal()">＋ Save a place we found</button>
       </div>
-
-      <div class="side-panel">
-        <h3 style="margin-bottom: 10px;">⭐ Saved Places (<span id="savedCount">0</span>)</h3>
+      <div class="side-panel" id="our-list">
+        <div class="side-caption">OUR FOOD ADVENTURES</div>
+        <h3>♡ Saved places (<span id="savedCount">0</span>)</h3>
         <div class="tabs-container" id="tabsContainer"></div>
         <ul class="saved-list" id="savedContainer"></ul>
+        <div class="save-note">Your list is saved on this device, not synced across phones yet.
+          <div style="margin-top:8px"><button class="inline-link" onclick="shareOurList()">↗ Copy our saved list</button></div>
+        </div>
       </div>
-    </div>
+    </aside>
   </div>
 
-  <div class="modal-overlay" id="menuModal" onclick="closeMenuModal(event)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-      <button class="close-modal" onclick="closeMenuModal()">✖</button>
-      <h2 id="modalRestName" style="color: var(--primary); margin-bottom: 4px;">Restaurant Name</h2>
-      <p id="modalRestCuisine" style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Cuisine • Rating</p>
-      <hr style="margin-bottom: 1rem;">
-      <h3 style="margin-bottom: 0.8rem;">📜 Signature Menu Items</h3>
+  <div class="modal-overlay" id="menuModal" onclick="closeMenuModal()">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Restaurant menu" onclick="event.stopPropagation()">
+      <button class="close-modal" onclick="closeMenuModal()" aria-label="Close menu">✕</button>
+      <h2 id="modalRestName">Restaurant Name</h2>
+      <p id="modalRestCuisine" style="color:#897266;font-size:12px;margin:8px 0 15px">Cuisine</p>
+      <hr style="margin-bottom:16px;border:0;border-top:1px solid #e8dbce">
+      <h3 style="margin-bottom:12px;font-family:'Playfair Display',Georgia,serif;font-weight:600">Sample menu ideas</h3>
       <div id="menuItemsList"></div>
-      <div style="margin-top: 1.5rem; text-align: center;">
-        <a id="externalMenuLink" href="#" target="_blank" class="btn btn-menu" style="text-decoration:none; width: 100%;">🌐 Full Online Menu</a>
-      </div>
+      <p class="form-help" style="margin-top:16px">Menus and prices shown here may be examples. Check the current menu before visiting.</p>
+      <a id="externalMenuLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-menu" style="text-decoration:none;width:100%">↗ Look up current menu</a>
     </div>
   </div>
+  <div class="modal-overlay" id="addSpotModal" onclick="closeAddSpotModal()">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-label="Add a saved restaurant" onclick="event.stopPropagation()">
+      <button class="close-modal" onclick="closeAddSpotModal()" aria-label="Close add restaurant">✕</button>
+      <div class="eyebrow">SAVE A PLACE FOR LATER</div>
+      <h2 style="margin:8px 0 4px">Add to our list ♡</h2>
+      <p class="form-help">Found a restaurant on Maps or while travelling? Add it here and keep it under its city.</p>
+      <form id="customSpotForm" onsubmit="event.preventDefault();saveCustomSpot()">
+        <label class="form-field">Restaurant name *<input id="newSpotName" required maxlength="100" placeholder="e.g. The little Italian place"></label>
+        <label class="form-field">City or destination *<input id="newSpotLocation" required maxlength="100" placeholder="e.g. Miami, FL"></label>
+        <label class="form-field">Cuisine (optional)<input id="newSpotCuisine" maxlength="70" placeholder="e.g. Italian, Brunch, Seafood"></label>
+        <label class="form-field">Address (optional)<input id="newSpotAddress" maxlength="170" placeholder="Street or neighborhood"></label>
+        <button class="btn btn-ai" type="submit" style="width:100%;margin-top:9px">♡ Save this restaurant</button>
+      </form>
+    </div>
+  </div>
+  <footer>Made for little food adventures & beautiful moments together. · <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Explore real places on Maps ↗</a></footer>
+
+
 
   <script>
     const localDatabase = {
@@ -592,63 +772,29 @@
       searchRestaurants(targetLocation, keyword);
     }
 
-    function generateMockData(location, keyword = "") {
-      let baseData = localDatabase[location];
-      
-      if (!baseData) {
-        // Dynamic mock generator tailored to user's location & query
-        baseData = Array.from({ length: 12 }, (_, i) => {
-          let cuisine = getRandomItem(mockDb.cuisines);
-          if (keyword) {
-            const capKey = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-            cuisine = `${capKey} Specialty 🍽️`;
-          }
-          const cuisineType = cuisine.split(' ')[0];
-          const name = `${getRandomItem(mockDb.names)} ${cuisineType}`;
-          return {
-            id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}-${Date.now()}`,
-            name: name,
-            cuisine: cuisine,
-            rating: (Math.random() * (5.0 - 4.2) + 4.2).toFixed(1),
-            recScore: `${Math.floor(Math.random() * (99 - 89) + 89)}%`,
-            price: "$".repeat(Math.floor(Math.random() * 3) + 1),
-            address: `${100 + i * 14} Main St, ${location}`,
-            phone: `(${Math.floor(Math.random() * 800 + 100)}) ${Math.floor(Math.random() * 800 + 100)}-${Math.floor(Math.random() * 8999 + 1000)}`,
-            hours: "11:00 AM - 10:00 PM",
-            tags: [keyword || "AI Matched", "Popular", "Dine-In"],
-            aiInsight: `Matched for '${keyword || location}' based on community ratings and popularity.`,
-            location: location,
-            menu: [
-              { item: `Signature ${cuisineType} Special`, price: "$17.50", desc: "Freshly prepared house specialty." },
-              { item: `House Favorite Appetizer`, price: "$10.50", desc: "Chef's custom recipe starter." }
-            ]
-          };
-        });
-      } else {
-        baseData = baseData.map((item, i) => ({
-          id: `${location.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${i}`,
-          ...item,
-          location: location
-        }));
-      }
-
-      return baseData;
+    // Keep the original local preview; never invent restaurants, ratings or contact details for other cities.
+    function generateMockData(location) {
+      const baseData = localDatabase[location] || [];
+      return baseData.map((item, i) => ({
+        ...item,
+        id: location.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + i,
+        location
+      }));
     }
 
     function searchRestaurants(loc = "Hollywood, FL", keyword = "") {
       // Format capitalization
-      const formattedLoc = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const formattedLoc = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\b(Fl|Ca|Ny|Tx|Ga|Il)\b/g, s => s.toUpperCase());
+      currentSearchKeyword = keyword.toLowerCase();
       document.getElementById('currentLoc').innerText = formattedLoc;
       document.getElementById('statLoc').innerText = formattedLoc;
 
       currentResults = generateMockData(formattedLoc, keyword);
       applyCurrentFilter();
 
-      const summaryText = keyword 
-        ? `🤖 <strong>AI Match Analysis:</strong> Showing spots in <strong>${formattedLoc}</strong> matching <em>"${keyword}"</em>.`
-        : `🤖 <strong>AI Area Summary:</strong> Active location updated to <strong>${formattedLoc}</strong>. Showing top rated spots with OpenTable & live menus.`;
-        
-      document.getElementById('aiSummaryBox').innerHTML = summaryText;
+      document.getElementById('aiSummaryBox').textContent = currentResults.length
+        ? 'These are starter ideas for this area. Ratings, menus and hours are not live. Verify details on Google Maps before visiting.'
+        : 'No locally prepared preview ideas for this city. Choose Search Google Maps to explore real restaurants, then tap “Save a place we found” to add favorites here.';
     }
 
     function setFilter(element, filterType) {
@@ -821,7 +967,7 @@
       const itemsToShow = filteredResults.slice(0, visibleCount);
 
       if (itemsToShow.length === 0) {
-        container.innerHTML = `<p style="color:#777; grid-column: 1/-1; padding: 2rem; text-align:center;">No spots matched your query or filter criteria. Try clicking 'All Cuisines' or typing a broader search.</p>`;
+        container.innerHTML = '<div class="empty-state"><div><div style="font-size:30px;margin-bottom:9px">🍽️</div><strong>Let’s find your next favorite table</strong><p style="margin:9px 0 15px;font-size:12px">Preview ideas aren’t available here. Browse live restaurants on Maps, then save your favorites to our list.</p><button class="btn btn-ai" onclick="openLiveSearch()">↗ Search real restaurants</button></div></div>';
         loadMoreBtn.style.display = 'none';
         return;
       }
@@ -839,10 +985,10 @@
           <div>
             <h3>${spot.name}</h3>
             <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
-            <span class="rec-score">🔥 ${spot.recScore} Match</span>
+            <span class="rec-score">✦ Preview idea · verify details</span>
 
             <div class="ai-insight-box">
-              💡 ${spot.aiInsight || 'Top spot for food quality and user satisfaction.'}
+              💡 ${spot.aiInsight || 'Explore the details before planning a visit.'}
             </div>
 
             <div class="meta-details">
@@ -883,10 +1029,11 @@
       const tabsContainer = document.getElementById('tabsContainer');
       const savedContainer = document.getElementById('savedContainer');
       document.getElementById('savedCount').innerText = savedSpots.length;
+      document.getElementById('savedTotal').innerText = savedSpots.length;
 
       if (savedSpots.length === 0) {
         tabsContainer.innerHTML = '';
-        savedContainer.innerHTML = `<p style="color: #888; font-size: 0.85rem;">No saved places yet.</p>`;
+        savedContainer.innerHTML = '<p class="form-help">Nothing saved just yet. Find a lovely place to try and add it to our little list ♡</p>';
         return;
       }
 
@@ -917,6 +1064,63 @@
         `;
         savedContainer.appendChild(li);
       });
+    }
+
+
+    function openLiveSearch() {
+      const query = document.getElementById('aiSearchInput').value.trim();
+      const city = document.getElementById('currentLoc').textContent.trim() || 'Hollywood, FL';
+      const text = query ? (/\b(restaurants?|cafes?|coffee|food|dining)\b/i.test(query) ? query : 'restaurants ' + query) : 'restaurants in ' + city;
+      const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(text);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function openAddSpotModal() {
+      document.getElementById('addSpotModal').classList.add('active');
+      document.getElementById('newSpotLocation').value = document.getElementById('currentLoc').textContent.trim();
+      document.getElementById('newSpotName').focus();
+    }
+    function closeAddSpotModal() {
+      document.getElementById('addSpotModal').classList.remove('active');
+    }
+    function saveCustomSpot() {
+      // Strip markup/control characters before putting user-entered text into the existing card templates.
+      const clean = id => document.getElementById(id).value.trim().replace(/[<>"'`\\]/g, '').replace(/[\x00-\x1f]/g,'').slice(0,170);
+      const name = clean('newSpotName');
+      const location = clean('newSpotLocation');
+      if (!name || !location) return;
+      const spot = {
+        id: 'personal-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
+        name, location,
+        cuisine: clean('newSpotCuisine') || 'Our own pick ♡',
+        address: clean('newSpotAddress') || 'View on Maps',
+        rating: '—', price: '$', phone: 'Check listing',
+        hours: 'Check listing', recScore: '—', tags: ['Our pick'],
+        aiInsight: 'A place saved for our next food adventure.',
+        menu: []
+      };
+      savedSpots.push(spot);
+      localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
+      activeTab = 'All';
+      renderSaved();
+      renderResults();
+      document.getElementById('customSpotForm').reset();
+      closeAddSpotModal();
+      document.getElementById('our-list').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    async function shareOurList() {
+      if (!savedSpots.length) { alert('Save a restaurant first, then copy your list.'); return; }
+      const text = 'Our NibbleSpot restaurant list ♡\n\n' +
+        savedSpots.map(s => '♡ ' + s.name + ' — ' + s.location +
+          (s.cuisine ? ' (' + s.cuisine + ')' : '')).join('\n') +
+        '\n\nFind restaurants: https://restaurant.ajdapp.org';
+      try {
+        if (navigator.share) await navigator.share({title:'Our NibbleSpot list',text});
+        else if (navigator.clipboard) { await navigator.clipboard.writeText(text); alert('Our saved list was copied!'); }
+        else window.prompt('Copy our list:',text);
+      } catch (error) {
+        if (error.name !== 'AbortError') window.prompt('Copy our list:',text);
+      }
     }
 
     document.getElementById('aiSearchInput').addEventListener('keypress', function(e) {
