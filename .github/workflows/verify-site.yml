@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for path in / /download /app.js /icon.svg /manifest.webmanifest /sw.js; do
+          for path in / /download /app.js /install-state.js /icon.svg /manifest.webmanifest /sw.js; do
             echo "Checking $path"
             curl --fail-with-body --location --max-time 30 --retry 2 --retry-delay 2 "https://restaurant.ajdapp.org$path" -o /dev/null
           done
@@ -28,6 +28,48 @@ jobs:
           assert d.get('ok') is True, d
           assert d.get('ai') is True, 'Missing AI binding'
           PY
+      - name: Check PWA and native app install-aware UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/install-state.js" -o install-state.js
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/" -o installed-home.html
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/download" -o installed-download.html
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/sw.js" -o installed-sw.js
+          node --check install-state.js
+          node <<'NODE'
+          const fs=require('fs'),vm=require('vm'),assert=require('assert');
+          const js=fs.readFileSync('install-state.js','utf8');
+          function verify(description,{ua='',pwa=false,ios=false,bridge=false}={},expected){
+            const root={dataset:{}};
+            const win={addEventListener(){},matchMedia:()=>({matches:pwa,addEventListener(){}})};
+            if(bridge)win.nibbleIntro={finish(){}};
+            const sandbox={window:win,navigator:{userAgent:ua,standalone:ios},document:{documentElement:root,addEventListener(){}}};
+            vm.runInNewContext(js,sandbox);
+            assert.strictEqual(root.dataset.nibbleInstalled,expected?'true':'false',description);
+            assert.strictEqual(win.NibbleSpotInstallState.isInstalled(),expected,description);
+            console.log(description,'→',expected?'installed':'regular website');
+          }
+          verify('Desktop Chrome',{ua:'Mozilla/5.0 Chrome/145.0'},false);
+          verify('Android Chrome',{ua:'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/145 Mobile Safari/537.36'},false);
+          verify('iPhone Safari',{ua:'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148'},false);
+          verify('Installed browser PWA',{pwa:true},true);
+          verify('Installed iOS home screen',{ios:true},true);
+          verify('Existing Windows/Mac Electron app',{bridge:true},true);
+          verify('Existing Android APK',{ua:'Mozilla/5.0 (Linux; Android 15; Pixel; wv) AppleWebKit/537.36 Version/4.0 Chrome/145.0.0.0 Mobile Safari/537.36'},true);
+          verify('Branded Android app',{ua:'Mozilla/5.0 Chrome/145 NibbleSpotAndroidApp/1.0'},true);
+          const home=fs.readFileSync('installed-home.html','utf8');
+          const download=fs.readFileSync('installed-download.html','utf8');
+          const sw=fs.readFileSync('installed-sw.js','utf8');
+          assert(home.includes('src="/install-state.js"'));
+          assert((home.match(/data-install-promo/g)||[]).length>=5);
+          assert(home.includes('html[data-nibble-installed="true"] [data-install-promo]'));
+          assert(download.includes('class="installed-app-view"')&&download.includes('data-install-promo'));
+          assert(download.includes('src="/install-state.js"'));
+          assert(sw.includes('/install-state.js'));
+          console.log('All installed-app UI and caching checks passed');
+          NODE
+
       - name: Verify Apple Maps, auto-capitalization and desktop download page
         shell: bash
         run: |
