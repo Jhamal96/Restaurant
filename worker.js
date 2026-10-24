@@ -77,10 +77,33 @@ function convertPhotonPlace(feature){
  return {name,label:unique.slice(0,6).join(', '),detail:[kind,p.city||p.district||p.locality,p.state,p.country].filter(Boolean).join(' · '),
    kind,lat:Number(coord[1]),lon:Number(coord[0])};
 }
+/* US ZIP codes require a dedicated postal lookup: generic name search matches
+   building/street numbers worldwide and can send people to the wrong country. */
+async function zipLocation(zip) {
+ const z=String(zip||'').match(/^(\d{5})(?:-\d{4})?$/)?.[1];
+ if(!z)return null;
+ try{
+   const data=await apiFetch('https://api.zippopotam.us/us/'+z,{},6500);
+   const p=(data.places||[])[0];
+   if(!p)return null;
+   const lat=numberIn(p.latitude,-90,90),lon=numberIn(p.longitude,-180,180);
+   if(lat===null||lon===null)return null;
+   const city=text(p['place name'],90),state=text(p.state,80);
+   return {name:z,label:[z,city,state,'United States'].filter(Boolean).join(', '),
+     detail:'U.S. ZIP code · '+[city,state].filter(Boolean).join(', '),
+     kind:'ZIP code',lat,lon,source:'Zippopotam.us'};
+ }catch{return null;}
+}
+
 async function locationSuggestions(request){
  const raw=new URL(request.url).searchParams.get('q')||'';
  const query=text(raw,90);
  if(query.length<2)return json({suggestions:[],message:'Type at least two letters to see places.'});
+ if(/^\d{5}(?:-\d{0,4})?$/.test(query)){
+   const zip=await zipLocation(query);
+   return json({suggestions:zip?[zip]:[],source:'U.S. ZIP directory · Zippopotam.us',
+     message:zip?'':'No matching U.S. ZIP code was found. Double-check the number.'});
+ }
  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/locations?q='+encodeURIComponent(normalize(query)));
  const cache=caches.default;
  const hit=await cache.match(cacheKey);
@@ -110,6 +133,11 @@ async function locationSuggestions(request){
 }
 
 async function resolveLocation(location) {
+ if(/^\d{5}(?:-\d{4})?$/.test(String(location).trim())){
+   const zip=await zipLocation(location.trim());
+   if(!zip)throw Error('That U.S. ZIP code could not be resolved. Check all five digits.');
+   return [zip.lat,zip.lon];
+ }
  const known=locateKnown(location);
  if(known)return known;
  const query=encodeURIComponent(location);
