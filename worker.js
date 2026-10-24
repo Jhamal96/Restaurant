@@ -7,7 +7,7 @@ function text(v,max=110){return String(v==null?'':v).trim().slice(0,max)}
 function numberIn(v,min,max){const n=Number(v);return Number.isFinite(n)&&n>=min&&n<=max?n:null}
 function locateKnown(location){
  const key=location.toLowerCase().replace(/\s+/g,' ').trim();
- const choices=[[/hollywood.*(fl|florida)|^hollywood$/,[26.0112,-80.1495]],[/^miami/,[25.7752,-80.1992]],[/fort lauderdale/,[26.1224,-80.1373]],[/^orlando/,[28.5384,-81.3789]],[/^new york|^nyc$/,[40.7128,-74.006]],[/^las vegas/,[36.1699,-115.1398]],[/^tampa/,[27.9506,-82.4572]],[/^atlanta/,[33.749,-84.388]],[/^chicago/,[41.8781,-87.6298]],[/^los angeles/,[34.0522,-118.2437]],[/^san francisco/,[37.7749,-122.4194]],[/^paris/,[48.8566,2.3522]],[/^london/,[51.5072,-.1276]]];
+ const choices=[[/hollywood.*(fl|florida)|^hollywood$/,[26.0112,-80.1495]],[/^miami(?:,?\s*(?:fl|florida))?$/,[25.7752,-80.1992]],[/fort lauderdale/,[26.1224,-80.1373]],[/^orlando(?:,?\s*(?:fl|florida))?$/,[28.5384,-81.3789]],[/^new york(?:,?\s*(?:ny|new york))?$|^nyc$/,[40.7128,-74.006]],[/^las vegas(?:,?\s*(?:nv|nevada))?$/,[36.1699,-115.1398]],[/^tampa(?:,?\s*(?:fl|florida))?$/,[27.9506,-82.4572]],[/^atlanta(?:,?\s*(?:ga|georgia))?$/,[33.749,-84.388]],[/^chicago(?:,?\s*(?:il|illinois))?$/,[41.8781,-87.6298]],[/^los angeles(?:,?\s*(?:ca|california))?$/,[34.0522,-118.2437]],[/^san francisco(?:,?\s*(?:ca|california))?$/,[37.7749,-122.4194]],[/^paris/,[48.8566,2.3522]],[/^london/,[51.5072,-.1276]]];
  for(const [re,point] of choices){if(re.test(key))return point}return null;
 }
 function normalize(s){return text(s,160).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim()}
@@ -56,12 +56,26 @@ function fallbackLocations(q){
 }
 function convertPhotonPlace(feature){
  const p=feature?.properties||{},coord=feature?.geometry?.coordinates||[];
- if(!p.name||coord.length!==2||!Number.isFinite(Number(coord[0]))||!Number.isFinite(Number(coord[1])))return null;
+ if(coord.length!==2||!Number.isFinite(Number(coord[0]))||!Number.isFinite(Number(coord[1])))return null;
  const type=String(p.type||p.osm_value||'').toLowerCase();
- const kind=/country/.test(type)?'Country':/state|province|region/.test(type)?'Region':/district|suburb|locality|neighbou?rhood|quarter/.test(type)?'Neighborhood':/county/.test(type)?'County':'City';
- const parent=p.city&&String(p.city).toLowerCase()!==String(p.name).toLowerCase()?p.city:p.state;
- const region=p.state&&String(p.state).toLowerCase()!==String(parent||'').toLowerCase()&&String(p.state).toLowerCase()!==String(p.name).toLowerCase()?[parent,p.state].filter(Boolean).join(', '):parent;
- return makePlace(p.name,region,p.country,coord[1],coord[0],kind);
+ const address=!!p.housenumber;
+ const street=String(p.street||'').trim();
+ const name=text(address?[p.housenumber,street||p.name].filter(Boolean).join(' '):(p.name||street||p.postcode),100);
+ if(!name)return null;
+ const kind=address?'Street address':/street|highway/.test(type)?'Street':/postcode|postal/.test(type)?'ZIP / postal code':
+  /country/.test(type)?'Country':/state|province|region/.test(type)?'Region':
+  /district|suburb|locality|neighbou?rhood|quarter/.test(type)?'Neighborhood':/county/.test(type)?'County':'City';
+ const unique=[];
+ const append=v=>{if(v&&!unique.some(item=>normalize(item)===normalize(v)))unique.push(String(v))};
+ append(name);
+ if(!address&&street&&kind!=='Street'&&normalize(street)!==normalize(name))append(street);
+ append(p.district||p.locality);
+ append(p.city);
+ append(p.state);
+ if(p.postcode&&kind==='Street address')append(p.postcode);
+ append(p.country);
+ return {name,label:unique.slice(0,6).join(', '),detail:[kind,p.city||p.district||p.locality,p.state,p.country].filter(Boolean).join(' · '),
+   kind,lat:Number(coord[1]),lon:Number(coord[0])};
 }
 async function locationSuggestions(request){
  const raw=new URL(request.url).searchParams.get('q')||'';
@@ -74,7 +88,7 @@ async function locationSuggestions(request){
  let matched=[],source='OpenStreetMap · Photon',message='';
  try{
    const params=new URLSearchParams({q:query,lang:'en',limit:'15'});
-   for(const layer of ['city','district','locality','county','state','country'])params.append('layer',layer);
+   for(const layer of ['house','street','city','district','locality','county','state','country'])params.append('layer',layer);
    const data=await apiFetch('https://photon.komoot.io/api/?'+params.toString(),{},7000);
    matched=(data.features||[]).map(convertPhotonPlace).filter(Boolean);
  }catch(error){
@@ -101,8 +115,11 @@ async function resolveLocation(location) {
  const query=encodeURIComponent(location);
  const response=await apiFetch('https://photon.komoot.io/api/?q='+query+'&limit=5&lang=en',{},9500);
  const features=(response.features||[]).filter(f=>Array.isArray(f.geometry?.coordinates)&&f.geometry.coordinates.length===2);
- const match=features.find(f=>/city|town|village|municipality|borough|suburb/.test(f.properties?.type||''))||features[0];
- if(!match)throw Error('We could not locate that city. Try adding a state or country.');
+ const precise=/\d/.test(location)||/\b(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|way|zip|postcode)\b/i.test(location);
+ const match=precise
+  ? features.find(f=>f.properties?.housenumber||f.properties?.postcode&&normalize(location).includes(normalize(f.properties.postcode)))||features[0]
+  : features.find(f=>/city|town|village|municipality|borough|suburb|district|neighbou?rhood|quarter/.test(f.properties?.type||''))||features[0];
+ if(!match)throw Error('We could not locate this place. Try a more detailed address, city, state or postal code.');
  return [match.geometry.coordinates[1],match.geometry.coordinates[0]];
 }
 function makeSpot(el,loc){
@@ -157,6 +174,65 @@ async function photonRestaurants(lat,lon,location,q){
  }
  return spots;
 }
+
+/* Live OSM restaurant-name autocomplete near the selected search location.
+   Suggestions are actual Photon places, not AI-generated restaurant names. */
+function photonPlaceRestaurant(feature,location){
+ const p=feature?.properties||{},coord=feature?.geometry?.coordinates||[];
+ if(!p.name||coord.length!==2||!['restaurant','cafe','fast_food'].includes(p.osm_value))return null;
+ const lat=Number(coord[1]),lon=Number(coord[0]);
+ if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;
+ const address=[p.housenumber,p.street,p.city||p.locality,p.state,p.postcode].filter(Boolean).join(', ')||location;
+ const cuisine=p.osm_value==='cafe'?'Cafe':p.osm_value==='fast_food'?'Fast food':'Restaurant';
+ return {id:'osm-'+(p.osm_type||'N')+'-'+(p.osm_id||lat+'-'+lon),
+   name:text(p.name,120),location,address,lat,lon,cuisine,
+   website:'',phone:'',hours:'',price:'',rating:null,recScore:'',
+   tags:[cuisine],aiInsight:'Listed on OpenStreetMap via Photon. Please verify hours, menu and availability.',menu:[]};
+}
+function nameRelevance(name,query){
+ const n=normalize(name),q=normalize(query);
+ if(!n||!q)return 0;
+ if(n===q)return 120;
+ if(n.startsWith(q))return 90;
+ if(n.includes(q))return 70;
+ const words=q.split(' ').filter(Boolean);
+ return words.length&&words.every(w=>n.includes(w))?45:0;
+}
+async function restaurantSuggestions(request){
+ const u=new URL(request.url),q=text(u.searchParams.get('q'),90);
+ const location=text(u.searchParams.get('location')||'Hollywood, FL',100);
+ if(q.length<2)return json({suggestions:[],message:'Type at least two letters.'});
+ let lat=numberIn(u.searchParams.get('lat'),-90,90),lon=numberIn(u.searchParams.get('lon'),-180,180);
+ // Beware missing query params: Number(null) is zero.
+ if(u.searchParams.get('lat')===null)lat=null;
+ if(u.searchParams.get('lon')===null)lon=null;
+ try{
+   if(lat===null||lon===null)[lat,lon]=await resolveLocation(location);
+   const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/restaurant-suggest?q='+encodeURIComponent(normalize(q))+'&lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3));
+   const cache=caches.default,hit=await cache.match(cacheKey);
+   if(hit)return hit;
+   const params=new URLSearchParams({q,lat:String(lat),lon:String(lon),limit:'35',lang:'en'});
+   for(const tag of ['amenity:restaurant','amenity:cafe','amenity:fast_food'])params.append('osm_tag',tag);
+   const data=await apiFetch('https://photon.komoot.io/api/?'+params.toString(),{},8500);
+   const unique=new Set(),restaurants=[];
+   for(const f of data.features||[]){
+     const spot=photonPlaceRestaurant(f,location);
+     if(!spot||withinKm(lat,lon,spot.lat,spot.lon)>30)continue;
+     const key=normalize(spot.name)+'|'+normalize(spot.address);
+     if(unique.has(key))continue;
+     unique.add(key);
+     restaurants.push(spot);
+   }
+   restaurants.sort((a,b)=>nameRelevance(b.name,q)-nameRelevance(a.name,q)||
+     withinKm(lat,lon,a.lat,a.lon)-withinKm(lat,lon,b.lat,b.lon));
+   const response=json({suggestions:restaurants.slice(0,8),source:'OpenStreetMap · Photon',
+     message:restaurants.length?'':'No matching restaurant names nearby. Try another term or wider area.'});
+   response.headers.set('cache-control','public,max-age=600');
+   await cache.put(cacheKey,response.clone());
+   return response;
+ }catch(e){return json({suggestions:[],message:'Name suggestions are temporarily unavailable. You can still search by name or cuisine.'})}
+}
+
 async function nearby(lat,lon,location,q='') {
  // A targeted Photon search is more responsive for named cuisines than large Overpass area queries.
  // Photon returns OSM-backed places, so we never fabricate a restaurant.
@@ -236,6 +312,7 @@ async function restaurantSearch(request,env,isAI){
   spots=spots.map(s=>({...s,location}));
   let matches=spots.filter(s=>matchesQuery(s,q));
   if(q&&matches.length===0&&keywords(q).length===0)matches=spots;
+  if(q)matches.sort((a,b)=>nameRelevance(b.name,q)-nameRelevance(a.name,q));
   const note=matches.length?'Showing '+matches.length+' real restaurant listings near '+location+'. OpenStreetMap does not supply verified ratings or reservation availability.':'No matching restaurants were found in this OpenStreetMap area. Try another cuisine or nearby location.';
   return json({location,results:matches.slice(0,90),aiNote,message:note,source:'OpenStreetMap · Overpass · Photon'});
  }catch(e){return json({error:'Unable to search this area right now. '+text(e.message,140)},503)}
@@ -244,6 +321,7 @@ export default {async fetch(request,env){
  const url=new URL(request.url);let path=url.pathname;
  if(path==='/api/health')return json({ok:true,service:'NibbleSpot',search:'Overpass/Photon',ai:!!env.AI,version:'2026.10.24'});
  if(path==='/api/locations'&&request.method==='GET')return locationSuggestions(request);
+ if(path==='/api/restaurant-suggestions'&&request.method==='GET')return restaurantSuggestions(request);
  if(path==='/api/search'&&request.method==='GET')return restaurantSearch(request,env,false);
  if(path==='/api/ai-search'&&request.method==='POST')return restaurantSearch(request,env,true);
  if(path.startsWith('/api/'))return json({error:'Not found'},404);
