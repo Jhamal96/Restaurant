@@ -6,6 +6,7 @@
   <title>NibbleSpot | Our Table ♡</title>
   <meta name="theme-color" content="#f9f5ee">
   <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/install-state.js"></script>
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="NibbleSpot">
@@ -604,6 +605,7 @@
       .location-suggestions {min-width:0;max-height:57vh}
       .search-input-group .location-field #cityInput {min-width:0}
     }
+    html[data-nibble-installed="true"] [data-install-promo] {display:none!important}
   </style>
 </head>
 
@@ -616,7 +618,7 @@
     <nav class="topnav" aria-label="Main navigation">
       <a href="#discover">Discover</a>
       <a href="#our-list">Saved places</a>
-      <button id="installAppBtn" type="button" onclick="installNibbleSpot()" class="nav-install">↓ Install</button><a href="/download" class="nav-cta">↓ Download</a>
+      <button data-install-promo id="installAppBtn" type="button" onclick="installNibbleSpot()" class="nav-install">↓ Install</button><a data-install-promo href="/download" class="nav-cta">↓ Download</a>
     </nav>
   </header>
 
@@ -659,7 +661,7 @@
       <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
       <button class="btn btn-map" type="button" onclick="openAppleMapsSearch()" title="Find restaurants in Apple Maps" aria-label="Search restaurants in Apple Maps">🍎 Apple Maps Search</button>
-      <a href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
+      <a data-install-promo href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
     </div>
     <div class="filter-bar" aria-label="Filter restaurant ideas">
       <button class="filter-chip active" onclick="setFilter(this, 'all')">All ideas</button>
@@ -731,7 +733,7 @@
       </form>
     </div>
   </div>
-  <footer>Made for little food adventures & beautiful moments together. · Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · <a href="/download">Get the app</a></footer>
+  <footer>Made for little food adventures & beautiful moments together. · Data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> · <a data-install-promo href="/download">Get the app</a></footer>
 
 
 
