@@ -135,6 +135,11 @@ async function restaurantSearch(request,env,isAI){
      aiNote='✦ AI interpreted your request'+(obj.vibe?' ('+text(obj.vibe,65)+')':'')+'.';
    } catch(e){aiNote='AI is temporarily unavailable, so we used a regular restaurant search.';}
  }
+ // Even when inference is unavailable, keep a city mentioned in a natural-language query.
+ const inCity=q.match(/^(.*?)\\s+in\\s+([^,]+(?:,\\s*[a-zA-Z]{2,})?)$/i);
+ if(inCity){q=text(inCity[1],70);location=text(inCity[2],100)||location;}
+ const foodKeyword=q.match(/\\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\\b/i);
+ if(foodKeyword&&keywords(q).length>1)q=foodKeyword[1];
  try{
   const coords=lat!==null&&lon!==null?[lat,lon]:await resolveLocation(location);
   const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
