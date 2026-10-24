@@ -64,7 +64,7 @@ function convertPhotonPlace(feature){
  if(!name)return null;
  const kind=address?'Street address':/street|highway/.test(type)?'Street':/postcode|postal/.test(type)?'ZIP / postal code':
   /country/.test(type)?'Country':/state|province|region/.test(type)?'Region':
-  /district|suburb|locality|neighbou?rhood|quarter/.test(type)?'Neighborhood':/county/.test(type)?'County':'City';
+  /district|suburb|locality|neighbou?rhood|quarter/.test(type)?'Neighborhood':/county/.test(type)?'County':/city|town|village/.test(type)?'City':'Place';
  const unique=[];
  const append=v=>{if(v&&!unique.some(item=>normalize(item)===normalize(v)))unique.push(String(v))};
  append(name);
@@ -143,10 +143,26 @@ async function resolveLocation(location) {
  const query=encodeURIComponent(location);
  const response=await apiFetch('https://photon.komoot.io/api/?q='+query+'&limit=5&lang=en',{},9500);
  const features=(response.features||[]).filter(f=>Array.isArray(f.geometry?.coordinates)&&f.geometry.coordinates.length===2);
- const precise=/\d/.test(location)||/\b(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|way|zip|postcode)\b/i.test(location);
- const match=precise
-  ? features.find(f=>f.properties?.housenumber||f.properties?.postcode&&normalize(location).includes(normalize(f.properties.postcode)))||features[0]
-  : features.find(f=>/city|town|village|municipality|borough|suburb|district|neighbou?rhood|quarter/.test(f.properties?.type||''))||features[0];
+ const exactHouse=String(location).trim().match(/^(\d{1,6})\s+(\S.*)/);
+ const precise=!!exactHouse||/\d/.test(location)||/\b(street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|way|zip|postcode)\b/i.test(location);
+ let match;
+ if(exactHouse){
+   // Never silently substitute a different street number for the requested address.
+   const requestedNumber=exactHouse[1];
+   const streetParts=normalize(exactHouse[2]).split(' ').filter(w=>w.length>2&&
+     !/^(street|road|avenue|boulevard|florida|california|northwest|southeast|drive|lane|washington)$/.test(w));
+   match=features.find(f=>{
+     const p=f.properties||{};
+     if(String(p.housenumber||'')!==requestedNumber)return false;
+     const candidate=normalize([p.street,p.name].join(' '));
+     return streetParts.length===0||streetParts.some(word=>candidate.includes(word));
+   });
+   if(!match)throw Error('Could not confirm that exact street number. Select an address suggestion or search the city and neighborhood instead.');
+ }else{
+   match=precise
+    ? features.find(f=>f.properties?.housenumber||f.properties?.postcode&&normalize(location).includes(normalize(f.properties.postcode)))||features[0]
+    : features.find(f=>/city|town|village|municipality|borough|suburb|district|neighbou?rhood|quarter/.test(f.properties?.type||''))||features[0];
+ }
  if(!match)throw Error('We could not locate this place. Try a more detailed address, city, state or postal code.');
  return [match.geometry.coordinates[1],match.geometry.coordinates[0]];
 }
