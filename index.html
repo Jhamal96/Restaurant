@@ -607,6 +607,20 @@
       .search-input-group .location-field #cityInput {min-width:0}
     }
     html[data-nibble-installed="true"] [data-install-promo] {display:none!important}
+
+    /* Precise restaurant-name lookup with contextual suggestions. */
+    .search-input-group .restaurant-field {position:relative;flex:1.2 1 260px;min-width:240px;isolation:isolate;z-index:29}
+    .search-input-group .restaurant-field #aiSearchInput {width:100%;max-width:100%;min-width:0;height:100%;min-height:44px;flex:none;padding-right:26px}
+    .restaurant-suggestions {max-height:min(400px,65vh);min-width:300px}
+    .restaurant-suggestions .location-pin {background:var(--ns-soft,#f7e6d7)}
+    .restaurant-suggestions .location-option-text strong {font-weight:800}
+    .search-tips {display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;font-size:11px;color:var(--muted)}
+    .search-tips span {padding:5px 9px;background:var(--ns-soft,#f7e6d7);border-radius:20px}
+    @media(max-width:720px){
+      .search-input-group .restaurant-field {grid-column:1/-1;min-width:0;width:100%}
+      .search-input-group .restaurant-field #aiSearchInput {min-width:0}
+      .restaurant-suggestions {min-width:0;max-height:57vh}
+    }
   </style>
   <link rel="stylesheet" href="/theme.css">
 </head>
@@ -650,21 +664,25 @@
       <div>
         <div class="eyebrow">A LITTLE SOMETHING DELICIOUS</div>
         <h2>Where should we eat?</h2>
-        <p class="subcopy">Start typing a city or neighborhood to see matching destinations as you type. Select one to explore restaurants, or search any craving with AI.</p>
+        <p class="subcopy">Enter a city, neighborhood, ZIP code or address. Type a restaurant name to see real nearby matches, or search by cuisine and cravings.</p>
       </div>
     </div>
     <div class="search-input-group">
       <div class="location-field" id="locationField">
-        <input aria-label="City or destination" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="locationSuggestions" aria-expanded="false" autocomplete="off" type="text" autocapitalize="words" id="cityInput" placeholder="Start typing a city or neighborhood…" value="Hollywood, FL">
+        <input aria-label="City or destination" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="locationSuggestions" aria-expanded="false" autocomplete="off" type="text" autocapitalize="words" id="cityInput" placeholder="City, ZIP code, neighborhood, or street address…" value="Hollywood, FL">
         <div class="location-suggestions" id="locationSuggestions" role="listbox" aria-label="Suggested cities and areas" hidden></div>
       </div>
-      <input aria-label="Cuisine or restaurant name" type="search" autocapitalize="words" id="aiSearchInput" placeholder="Cuisine, restaurant, or craving…">
+      <div class="restaurant-field" id="restaurantField">
+        <input aria-label="Restaurant name or cuisine" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="restaurantSuggestions" aria-expanded="false" autocomplete="off" type="search" autocapitalize="words" id="aiSearchInput" placeholder="Restaurant name or cuisine (e.g. Versailles, pizza)…">
+        <div class="location-suggestions restaurant-suggestions" id="restaurantSuggestions" role="listbox" aria-label="Matching restaurant names" hidden></div>
+      </div>
       <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Find restaurants</button>
       <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
       <button class="btn btn-map" type="button" onclick="openAppleMapsSearch()" title="Find restaurants in Apple Maps" aria-label="Search restaurants in Apple Maps">🍎 Apple Maps Search</button>
       <a data-install-promo href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
     </div>
+    <div class="search-tips" aria-label="Search examples"><span>⌖ Neighborhood or ZIP</span><span>⌖ Street address</span><span>🍽 Exact restaurant name</span><span>🥗 Cuisine or craving</span></div>
     <div class="filter-bar" aria-label="Filter restaurant ideas">
       <button class="filter-chip active" onclick="setFilter(this, 'all')">All ideas</button>
       <button class="filter-chip" onclick="setFilter(this, 'cafe')">☕ Breakfast & cafes</button>
