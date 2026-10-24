@@ -1,0 +1,66 @@
+{
+  "name": "nibblespot-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NibbleSpot — Our Table, restaurant discovery desktop app",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "npm run prepare:icons && electron .",
+    "prepare:icons": "node prepare-assets.cjs",
+    "dist:win": "npm run prepare:icons && electron-builder --win nsis --x64",
+    "dist:mac": "npm run prepare:icons && electron-builder --mac dmg --universal"
+  },
+  "devDependencies": {
+    "electron": "^34.5.8",
+    "electron-builder": "^25.1.8",
+    "sharp": "^0.33.5"
+  },
+  "build": {
+    "appId": "org.ajdapp.nibblespot",
+    "productName": "NibbleSpot",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "intro.html",
+      "icon.png"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "icon": "icon.png",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "NibbleSpot-Windows-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.food-and-drink",
+      "artifactName": "NibbleSpot-macOS.dmg"
+    },
+    "dmg": {
+      "title": "NibbleSpot",
+      "backgroundColor": "#f9f5ee"
+    }
+  }
+}
