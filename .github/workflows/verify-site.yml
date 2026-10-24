@@ -200,6 +200,9 @@ jobs:
           street_matches=json.loads(Path('street-places.json').read_text()).get('suggestions',[])
           assert isinstance(places.get('suggestions'),list),places
           assert isinstance(shops.get('suggestions'),list),shops
+          assert zip_matches and zip_matches[0].get('kind') == 'ZIP code', zip_matches
+          assert zip_matches[0].get('name') == '33020', zip_matches
+          assert 'Florida' in zip_matches[0].get('label',''),zip_matches
           assert all({'lat','lon','name','address','id'} <= item.keys() for item in shops['suggestions']),shops
           app=Path('precise-app.js').read_text()
           page=Path('precise-index.html').read_text()
