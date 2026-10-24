@@ -80,7 +80,13 @@ jobs:
         run: |
           set -euo pipefail
           for path in /theme.js /theme.css; do
-            curl -fsSL --max-time 25 "https://restaurant.ajdapp.org$path" -o "$(basename "$path")"
+            ok=false
+            for attempt in 1 2 3 4 5 6 7 8; do
+              if curl -fsSL --max-time 25 "https://restaurant.ajdapp.org$path" -o "$(basename "$path")"; then ok=true; break; fi
+              echo "Waiting for Cloudflare deployment of $path ($attempt)"
+              sleep 4
+            done
+            if [ "$ok" != "true" ]; then echo "Missing $path"; exit 1; fi
           done
           curl -fsSL --max-time 25 'https://restaurant.ajdapp.org/' -o appearance-index.html
           curl -fsSL --max-time 25 'https://restaurant.ajdapp.org/download' -o appearance-download.html
