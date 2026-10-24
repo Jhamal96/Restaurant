@@ -52,6 +52,29 @@ jobs:
           print('Live UI contains working app JavaScript, Apple Maps and cross-platform download choices.')
           PY
 
+      - name: Check live destination autocomplete and UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/api/locations?q=Miami" -o locations.json
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/app.js" -o locations-app.js
+          curl -fsSL --max-time 20 "https://restaurant.ajdapp.org/" -o locations-index.html
+          node --check locations-app.js
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('locations.json').read_text())
+          places=data.get('suggestions',[])
+          assert isinstance(places,list) and places, data
+          assert any('Miami' in (x.get('label') or '') for x in places), data
+          assert all(isinstance(x.get('lat'),(int,float)) and isinstance(x.get('lon'),(int,float)) for x in places), places
+          app=Path('locations-app.js').read_text()
+          page=Path('locations-index.html').read_text()
+          assert 'queueLocationSuggestions' in app and 'ArrowDown' in app and 'ArrowUp' in app
+          assert 'role="combobox"' in page and 'role="listbox"' in page
+          print('Autocomplete verified:',[x['label'] for x in places[:5]])
+          PY
+
       - name: Check restaurant search result
         shell: bash
         run: |
