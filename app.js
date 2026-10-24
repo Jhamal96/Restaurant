@@ -32,6 +32,124 @@ function capitalizeField(input){
 function getOpenTableUrl(name,location) {return 'https://www.opentable.com/s?term='+encodeURIComponent(name+' '+location)}
 function setMessage(message,isError=false){ searchInfo.textContent=message;searchInfo.style.color=isError?'#a13e33':''; }
 function setBusy(flag){loading=flag; const b=byId('regularSearchBtn');if(b){b.disabled=flag;b.textContent=flag?'Searching…':'⌕ Find restaurants'} const ai=byId('aiSearchBtn');if(ai){ai.disabled=flag;ai.textContent=flag?'Finding places…':'✦ AI Search'} }
+/* Accessible, Google-style location autocomplete.
+   Only requests location text (never GPS) after a short typing pause. */
+let suggestedLocations=[],locationOptionIndex=-1,locationSuggestTimer=null;
+let locationRequestSequence=0,locationFetchController=null,selectedLocation=null;
+const locationInput=byId('cityInput'),locationField=byId('locationField'),locationMenu=byId('locationSuggestions');
+function selectedLocationCoords(city){
+ return selectedLocation && selectedLocation.label.toLocaleLowerCase()===String(city).trim().toLocaleLowerCase()
+  ? {lat:selectedLocation.lat,lon:selectedLocation.lon}:null;
+}
+function hideLocationSuggestions(){
+ locationMenu.hidden=true;
+ locationInput.setAttribute('aria-expanded','false');
+ locationInput.removeAttribute('aria-activedescendant');
+ locationOptionIndex=-1;
+}
+function setActiveLocationOption(index){
+ const buttons=locationMenu.querySelectorAll('[role="option"]');
+ if(!buttons.length)return;
+ locationOptionIndex=Math.max(0,Math.min(index,buttons.length-1));
+ buttons.forEach((button,i)=>{
+   const active=i===locationOptionIndex;
+   button.classList.toggle('active',active);
+   button.setAttribute('aria-selected',active?'true':'false');
+   if(active){locationInput.setAttribute('aria-activedescendant',button.id);button.scrollIntoView({block:'nearest'});}
+ });
+}
+function showLocationStatus(message){
+ suggestedLocations=[];locationOptionIndex=-1;
+ locationMenu.replaceChildren();
+ const status=document.createElement('div');status.className='location-status';status.setAttribute('role','status');status.textContent=message;
+ locationMenu.append(status);locationMenu.hidden=false;locationInput.setAttribute('aria-expanded','true');
+ locationInput.removeAttribute('aria-activedescendant');
+}
+function chooseLocation(place){
+ if(!place)return;
+ clearTimeout(locationSuggestTimer);
+ locationRequestSequence++;
+ if(locationFetchController){locationFetchController.abort();locationFetchController=null;}
+ locationInput.value=place.label;
+ selectedLocation={label:place.label,lat:place.lat,lon:place.lon};
+ hideLocationSuggestions();
+ const {q,city}=getSearchParts();
+ searchRestaurants(city,q,selectedLocationCoords(city));
+}
+function paintLocationSuggestions(places,message){
+ suggestedLocations=Array.isArray(places)?places:[];
+ locationMenu.replaceChildren();
+ locationOptionIndex=-1;
+ locationInput.removeAttribute('aria-activedescendant');
+ if(!suggestedLocations.length){
+   showLocationStatus(message||'No close matches. You can still type a city and press Enter.');
+   return;
+ }
+ const title=document.createElement('div');title.className='location-header';title.textContent='SUGGESTED LOCATIONS';
+ locationMenu.append(title);
+ suggestedLocations.forEach((place,index)=>{
+   const button=document.createElement('button');
+   button.type='button';button.id='location-option-'+index;
+   button.className='location-option';
+   button.setAttribute('role','option');button.setAttribute('aria-selected','false');
+   const pin=document.createElement('span');pin.className='location-pin';pin.textContent='⌖';pin.setAttribute('aria-hidden','true');
+   const info=document.createElement('span');info.className='location-option-text';
+   const name=document.createElement('strong');name.textContent=place.label;
+   const details=document.createElement('small');details.textContent=place.detail||place.kind||'Location';
+   info.append(name,details);button.append(pin,info);
+   button.addEventListener('pointerdown',event=>event.preventDefault());
+   button.addEventListener('click',()=>chooseLocation(place));
+   locationMenu.append(button);
+ });
+ const attribution=document.createElement('div');attribution.className='location-attribution';
+ attribution.textContent='Places from OpenStreetMap · Select one to explore nearby restaurants';
+ locationMenu.append(attribution);
+ locationMenu.hidden=false;locationInput.setAttribute('aria-expanded','true');
+}
+function queueLocationSuggestions(){
+ clearTimeout(locationSuggestTimer);
+ locationRequestSequence++;
+ const seq=locationRequestSequence;
+ if(locationFetchController){locationFetchController.abort();locationFetchController=null;}
+ const q=locationInput.value.trim();
+ if(q.length<2){hideLocationSuggestions();return;}
+ showLocationStatus('Finding places…');
+ locationSuggestTimer=setTimeout(async()=>{
+   const controller=new AbortController();locationFetchController=controller;
+   try{
+     const response=await fetch('/api/locations?q='+encodeURIComponent(q),{signal:controller.signal,headers:{Accept:'application/json'}});
+     if(!response.ok)throw new Error('Location search is unavailable');
+     const data=await response.json();
+     if(seq!==locationRequestSequence||document.activeElement!==locationInput)return;
+     paintLocationSuggestions(data.suggestions,data.message);
+   }catch(error){
+     if(error.name==='AbortError'||seq!==locationRequestSequence)return;
+     showLocationStatus('Suggestions are temporarily unavailable. Press Enter to search this location.');
+   }finally{if(locationFetchController===controller)locationFetchController=null;}
+ },330);
+}
+locationInput.addEventListener('input',()=>{
+ selectedLocation=null;
+ queueLocationSuggestions();
+});
+locationInput.addEventListener('focus',()=>{
+ if(locationInput.value.trim().length>=2)queueLocationSuggestions();
+});
+locationInput.addEventListener('keydown',event=>{
+ const optionsOpen=!locationMenu.hidden&&suggestedLocations.length>0;
+ if(event.key==='ArrowDown'&&optionsOpen){
+   event.preventDefault();setActiveLocationOption(locationOptionIndex<0?0:locationOptionIndex+1);
+ }else if(event.key==='ArrowUp'&&optionsOpen){
+   event.preventDefault();setActiveLocationOption(locationOptionIndex<0?suggestedLocations.length-1:locationOptionIndex-1);
+ }else if(event.key==='Escape'){
+   hideLocationSuggestions();
+ }else if(event.key==='Enter'){
+   event.preventDefault();
+   if(optionsOpen)chooseLocation(suggestedLocations[locationOptionIndex<0?0:locationOptionIndex]);
+   else runAiSmartSearch();
+ }
+});
+document.addEventListener('pointerdown',event=>{if(!locationField.contains(event.target))hideLocationSuggestions();});
 function getSearchParts() {
   capitalizeField(byId('cityInput'));
   capitalizeField(byId('aiSearchInput'));
@@ -82,8 +200,8 @@ async function searchRestaurants(loc=currentLoc,keyword='',coords=null,ai=false)
     setMessage((error.name==='AbortError'?'The restaurant service took too long. Please retry.':error.message)+' Your saved places are safe.',true);
   }finally{if(requestId===requestNum)setBusy(false)}
 }
-function runAiSmartSearch(){const {q,city}=getSearchParts();nextCoords=null;return searchRestaurants(city,q);}
-function runAiIntentSearch(){const {q,city}=getSearchParts();if(!q){byId('aiSearchInput').focus();setMessage('Try something like “cozy Italian dinner under $30” to use AI search.');return}nextCoords=null;return searchRestaurants(city,q,null,true);}
+function runAiSmartSearch(){const {q,city}=getSearchParts();hideLocationSuggestions();return searchRestaurants(city,q,selectedLocationCoords(city));}
+function runAiIntentSearch(){const {q,city}=getSearchParts();hideLocationSuggestions();if(!q){byId('aiSearchInput').focus();setMessage('Try something like “cozy Italian dinner under $30” to use AI search.');return}return searchRestaurants(city,q,selectedLocationCoords(city),true);}
 function useMyLocation(){
  const button=byId('geoBtn');
  if(!navigator.geolocation){alert('Location access is not available in this browser.');return}
@@ -91,7 +209,7 @@ function useMyLocation(){
  navigator.geolocation.getCurrentPosition(pos=>{
    button.disabled=false;button.textContent='⌖ Near me';
    const {q}=getSearchParts();nextCoords={lat:pos.coords.latitude,lon:pos.coords.longitude};
-   byId('cityInput').value='Near me';searchRestaurants('Near me',q,nextCoords);
+   hideLocationSuggestions();selectedLocation=null;byId('cityInput').value='Near me';searchRestaurants('Near me',q,nextCoords);
  },()=>{button.disabled=false;button.textContent='⌖ Near me';alert('Allow location access in your browser to search nearby, or enter a city instead.');},{timeout:11000,maximumAge:120000});
 }
 function filterMatch(s) {
@@ -186,7 +304,7 @@ window.addEventListener('appinstalled',()=>{installPrompt=null;const b=byId('ins
  if(input){input.setAttribute('autocapitalize','words');input.addEventListener('blur',()=>capitalizeField(input));}
 });
 byId('aiSearchInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAiSmartSearch()});
-byId('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAiSmartSearch()});
+
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 renderSaved();
 searchRestaurants('Hollywood, FL','');
