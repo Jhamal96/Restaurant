@@ -32,7 +32,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --silent --show-error --max-time 55 "https://restaurant.ajdapp.org/api/search?location=Miami%2C%20FL&q=pizza" -o search.json\n          cat search.json\n          echo
+          curl --silent --show-error --max-time 55 "https://restaurant.ajdapp.org/api/search?location=Miami%2C%20FL&q=pizza" -o search.json
+          cat search.json
+          echo
           python3 - <<'PY'
           import json
           d=json.load(open('search.json'))
