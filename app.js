@@ -8,11 +8,33 @@ try { const data = JSON.parse(localStorage.getItem('nibble_saved') || '[]'); if(
 let currentResults=[], filteredResults=[], visibleCount=8, activeTab='All', currentFilter='all', currentSearchKeyword='', currentLoc='Hollywood, FL', nextCoords=null, requestNum=0, loading=false, installPrompt=null;
 const searchInfo = byId('aiSummaryBox');
 function getGoogleMapsUrl(name,address,location) {return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([name,address,location].filter(Boolean).join(', '))}
-function getAppleMapsUrl(name,address,location) {return 'https://maps.apple.com/?q='+encodeURIComponent([name,address,location].filter(Boolean).join(', '))}
+function getAppleMapsUrl(name,address,location,lat,lon) {
+ const parts=[name,address,location].filter(Boolean).join(', ');
+ const params=new URLSearchParams({q:parts});
+ if(Number.isFinite(Number(lat)) && Number.isFinite(Number(lon)) && lat!==undefined && lon!==undefined && lat!==null && lon!==null) params.set('ll',Number(lat)+','+Number(lon));
+ return 'https://maps.apple.com/?'+params.toString();
+}
+function openAppleMapsSearch(){
+ const {q,city}=getSearchParts();
+ const what=[q||'restaurants',city].filter(Boolean).join(' in ');
+ window.open('https://maps.apple.com/?q='+encodeURIComponent(what),'_blank','noopener,noreferrer');
+}
+function autoCapitalizeWords(value){
+ return String(value||'').replace(/(^|[\s\-\/])(\p{L})/gu,(match,sep,letter)=>sep+letter.toLocaleUpperCase())
+  .replace(/\b(Fl|Ca|Ny|Tx|Ga|Il|Nj|Nv|Usa|Uk|Dc)\b/g,part=>part.toUpperCase());
+}
+function capitalizeField(input){
+ if(!input || !input.value) return;
+ const before=input.value,after=autoCapitalizeWords(before);
+ if(before!==after)input.value=after;
+}
+
 function getOpenTableUrl(name,location) {return 'https://www.opentable.com/s?term='+encodeURIComponent(name+' '+location)}
 function setMessage(message,isError=false){ searchInfo.textContent=message;searchInfo.style.color=isError?'#a13e33':''; }
 function setBusy(flag){loading=flag; const b=byId('regularSearchBtn');if(b){b.disabled=flag;b.textContent=flag?'Searching…':'⌕ Find restaurants'} const ai=byId('aiSearchBtn');if(ai){ai.disabled=flag;ai.textContent=flag?'Finding places…':'✦ AI Search'} }
 function getSearchParts() {
+  capitalizeField(byId('cityInput'));
+  capitalizeField(byId('aiSearchInput'));
   let q=byId('aiSearchInput').value.trim(), city=byId('cityInput').value.trim()||currentLoc;
   const m=q.match(/^(.*?)\s+in\s+(.+)$/i);
   if(m){q=m[1].trim();city=m[2].trim();}
@@ -34,7 +56,7 @@ async function apiRequest(url, options, timeout=32000) {
 }
 async function searchRestaurants(loc=currentLoc,keyword='',coords=null,ai=false){
   const requestId=++requestNum;
-  currentLoc=clean(loc)||currentLoc;
+  currentLoc=autoCapitalizeWords(clean(loc))||currentLoc;
   currentSearchKeyword=keyword.trim();
   byId('cityInput').value=currentLoc;
   updateStats();
@@ -48,7 +70,7 @@ async function searchRestaurants(loc=currentLoc,keyword='',coords=null,ai=false)
     const data=ai?await apiRequest(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)},36000):await apiRequest(path+'?'+new URLSearchParams(params));
     if(requestId!==requestNum)return;
     currentResults=Array.isArray(data.results)?data.results:[];
-    currentLoc=data.location||currentLoc;
+    currentLoc=autoCapitalizeWords(data.location||currentLoc);
     byId('cityInput').value=currentLoc;
     setMessage(data.message || (currentResults.length?'Actual restaurant listings from OpenStreetMap. Verify hours and details before visiting.':'No listings returned. Try a nearby city or broader cuisine.'));
     if(data.aiNote && ai) setMessage(data.aiNote+' '+(data.message||''),false);
@@ -93,6 +115,7 @@ function renderResults(){
  container.innerHTML=filteredResults.slice(0,visibleCount).map(spot=>{
    const id=String(spot.id),saved=savedSpots.some(s=>String(s.id)===id);
    const url=getGoogleMapsUrl(spot.name,spot.address,spot.location);
+   const appleUrl=getAppleMapsUrl(spot.name,spot.address,spot.location,spot.lat,spot.lon);
    return '<article class="card">'+
    '<span class="card-tag">'+esc(spot.price||'Local listing')+'</span>'+
    '<div><h3>'+esc(spot.name)+'</h3><p>'+esc(spot.cuisine||'Restaurant')+(spot.rating?' · ⭐ '+esc(spot.rating):'')+'</p>'+
@@ -103,9 +126,10 @@ function renderResults(){
    (spot.hours?'<div>🕒 '+esc(spot.hours)+'</div>':'')+
    '<div style="margin-top:6px">'+(spot.tags||[]).slice(0,3).map(t=>'<span class="badge-pill">'+esc(t)+'</span>').join('')+'</div></div>'+
    '<div class="card-actions"><div class="action-row">'+
-   '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-google">📍 Directions</a>'+
-   '<a href="'+esc(spot.website?safeUrl(spot.website):'https://www.google.com/search?q='+encodeURIComponent(spot.name+' '+spot.location+' menu'))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-menu">↗ '+(spot.website?'Website':'Menu lookup')+'</a></div>'+
-   '<div class="action-row"><a href="'+esc(getOpenTableUrl(spot.name,spot.location))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-opentable">♡ Find reservations</a></div></div></div>'+
+   '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-google" aria-label="Open '+esc(spot.name)+' in Google Maps">🗺️ Google Maps</a>'+
+   '<a href="'+esc(appleUrl)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-apple" aria-label="Open '+esc(spot.name)+' in Apple Maps">🍎 Apple Maps</a></div>'+
+   '<div class="action-row"><a href="'+esc(spot.website?safeUrl(spot.website):'https://www.google.com/search?q='+encodeURIComponent(spot.name+' '+spot.location+' menu'))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-menu">↗ '+(spot.website?'Website':'Menu lookup')+'</a>'+
+   '<a href="'+esc(getOpenTableUrl(spot.name,spot.location))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-opentable">♡ Find tables</a></div></div></div>'+
    '<div class="card-footer"><small>📍 '+esc(spot.location)+'</small><button class="save-btn '+(saved?'saved':'')+'" onclick="toggleSave('+JSON.stringify(id).replace(/"/g,'&quot;')+')" aria-label="'+(saved?'Remove saved restaurant':'Save restaurant')+'">'+(saved?'♥':'♡')+'</button></div></article>';
  }).join('');
  // Use element-bound IDs instead of relying on escaped inline JavaScript strings.
@@ -129,8 +153,9 @@ function renderSaved(){
    const sub=document.createElement('small');sub.style.display='block';sub.style.color='#836e60';sub.textContent=(spot.cuisine||'Restaurant')+' · '+(spot.location||'Unknown');info.append(sub);
    const links=document.createElement('div');links.style.cssText='display:flex;gap:12px;margin-top:5px;flex-wrap:wrap';
    const map=document.createElement('a');map.href=getGoogleMapsUrl(spot.name,spot.address,spot.location);map.target='_blank';map.rel='noopener noreferrer';map.textContent='Directions ↗';map.style.cssText='font-size:11px;color:#996149;font-weight:800';
+   const apple=document.createElement('a');apple.href=getAppleMapsUrl(spot.name,spot.address,spot.location,spot.lat,spot.lon);apple.target='_blank';apple.rel='noopener noreferrer';apple.textContent='Apple Maps ↗';apple.style.cssText=map.style.cssText;
    const book=document.createElement('a');book.href=getOpenTableUrl(spot.name,spot.location);book.target='_blank';book.rel='noopener noreferrer';book.textContent='Find tables ↗';book.style.cssText=map.style.cssText;
-   links.append(map,book);info.append(links);
+   links.append(map,apple,book);info.append(links);
    const remove=document.createElement('button');remove.className='remove-btn';remove.textContent='✕';remove.setAttribute('aria-label','Remove '+spot.name);remove.onclick=()=>toggleSave(spot.id);
    li.append(info,remove);return li;
  }));
@@ -138,6 +163,7 @@ function renderSaved(){
 function openAddSpotModal(){byId('addSpotModal').classList.add('active');byId('newSpotLocation').value=byId('cityInput').value||currentLoc;byId('newSpotName').focus()}
 function closeAddSpotModal(){byId('addSpotModal').classList.remove('active')}
 function saveCustomSpot(){
+ ['newSpotName','newSpotLocation','newSpotCuisine','newSpotAddress'].forEach(id=>capitalizeField(byId(id)));
  const name=clean(byId('newSpotName').value),location=clean(byId('newSpotLocation').value);
  if(!name||!location)return;
  const spot={id:'personal-'+Date.now()+'-'+Math.floor(Math.random()*100000),name,location,cuisine:clean(byId('newSpotCuisine').value)||'Our pick',address:clean(byId('newSpotAddress').value),price:'',tags:['Saved by us'],aiInsight:'One of our restaurant ideas.',menu:[]};
@@ -155,6 +181,10 @@ function openDownload(){location.href='/download'}
 function installNibbleSpot(){if(installPrompt){const p=installPrompt;installPrompt=null;p.prompt();return}const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);alert(ios?'In Safari, tap Share and choose Add to Home Screen.':'Use your browser menu and choose Install app, or visit our Download page for the Android APK.')}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;const b=byId('installAppBtn');if(b)b.hidden=false});
 window.addEventListener('appinstalled',()=>{installPrompt=null;const b=byId('installAppBtn');if(b)b.hidden=true});
+['cityInput','aiSearchInput','newSpotName','newSpotLocation','newSpotCuisine','newSpotAddress'].forEach(id=>{
+ const input=byId(id);
+ if(input){input.setAttribute('autocapitalize','words');input.addEventListener('blur',()=>capitalizeField(input));}
+});
 byId('aiSearchInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAiSmartSearch()});
 byId('cityInput').addEventListener('keydown',e=>{if(e.key==='Enter')runAiSmartSearch()});
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
