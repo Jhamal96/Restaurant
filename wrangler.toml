@@ -1,0 +1,9 @@
+name = "restaurant"
+main = ".generated/nibblespot.mjs"
+compatibility_date = "2026-10-19"
+
+[build]
+command = "node scripts/bundle-worker.mjs"
+
+[ai]
+binding = "AI"
