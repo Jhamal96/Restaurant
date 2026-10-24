@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NibbleSpot | Our Table ♡</title>
   <meta name="theme-color" content="#f9f5ee">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="NibbleSpot">
   <meta name="description" content="Find a place to eat and save restaurants for your next date night or trip together.">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
@@ -555,6 +559,19 @@
     }
     @media (prefers-reduced-motion:reduce) {html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
 
+
+    .nav-install{border:1px solid #d9c6b5;background:#fff9f1;color:#81523d;border-radius:99px;padding:10px 16px;cursor:pointer;font-weight:800;font-size:12px}
+    .nav-install:hover{background:#eedcca}
+    .search-input-group #cityInput{flex:.6;min-width:170px}
+    .search-input-group #aiSearchInput{flex:1.2}
+    .search-input-group .btn{white-space:nowrap}
+    @media(max-width:720px){
+      .topnav{gap:6px}.nav-install{padding:9px 10px;font-size:10px}
+      .search-input-group{grid-template-columns:1fr 1fr}
+      .search-input-group #cityInput,.search-input-group #aiSearchInput{grid-column:1/-1;min-width:0}
+      .search-input-group #geoBtn{grid-column:1/-1}
+    }
+
   </style>
 </head>
 
@@ -567,7 +584,7 @@
     <nav class="topnav" aria-label="Main navigation">
       <a href="#discover">Discover</a>
       <a href="#our-list">Saved places</a>
-      <a href="#our-list" class="nav-cta">♡ Our little list</a>
+      <button id="installAppBtn" type="button" onclick="installNibbleSpot()" class="nav-install">↓ Install</button><a href="/download" class="nav-cta">↓ Download</a>
     </nav>
   </header>
 
@@ -587,7 +604,7 @@
 
   <div class="dashboard-bar" aria-label="Your restaurant dashboard">
     <div class="stat-card"><span class="stat-icon">📍</span><h4>Exploring</h4><div class="value" id="statLoc">Hollywood, FL</div></div>
-    <div class="stat-card"><span class="stat-icon">✦</span><h4>Ideas on screen</h4><div class="value" id="statCount">0</div></div>
+    <div class="stat-card"><span class="stat-icon">✦</span><h4>Restaurants found</h4><div class="value" id="statCount">0</div></div>
     <div class="stat-card"><span class="stat-icon">♡</span><h4>Places we love</h4><div class="value" id="savedTotal">0</div></div>
   </div>
   <span id="statRating" hidden></span><span id="statMatch" hidden></span>
@@ -597,14 +614,16 @@
       <div>
         <div class="eyebrow">A LITTLE SOMETHING DELICIOUS</div>
         <h2>Where should we eat?</h2>
-        <p class="subcopy">Try “Tacos in Miami”, “Sushi in New York”, or a city you’re visiting.</p>
+        <p class="subcopy">Search real restaurants inside NibbleSpot — any city, any craving. AI can help with natural-language requests.</p>
       </div>
     </div>
     <div class="search-input-group">
-      <input aria-label="Restaurant or location search" type="search" id="aiSearchInput" placeholder="A city, cuisine, or craving…">
-      <button class="btn btn-ai" onclick="runAiSmartSearch()">⌕ Preview ideas</button>
+      <input aria-label="City or destination" type="text" id="cityInput" placeholder="City or destination (e.g. Miami, FL)" value="Hollywood, FL">
+      <input aria-label="Cuisine or restaurant name" type="search" id="aiSearchInput" placeholder="Cuisine, restaurant, or craving…">
+      <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Find restaurants</button>
+      <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
-      <button class="btn btn-map" onclick="openLiveSearch()">↗ Search Google Maps</button>
+      <a href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
     </div>
     <div class="filter-bar" aria-label="Filter restaurant ideas">
       <button class="filter-chip active" onclick="setFilter(this, 'all')">All ideas</button>
@@ -613,7 +632,7 @@
       <button class="filter-chip" onclick="setFilter(this, 'tacos')">🌮 Tacos</button>
       <button class="filter-chip" onclick="setFilter(this, 'pizza')">🍕 Pizza</button>
       <button class="filter-chip" onclick="setFilter(this, 'mediterranean')">🥙 Mediterranean</button>
-      <button class="filter-chip" onclick="setFilter(this, 'high-rating')">⭐ Sample 4.7+</button>
+      
       <button class="filter-chip" onclick="setFilter(this, 'budget')">💸 $ / $</button>
     </div>
   </section>
@@ -622,7 +641,7 @@
     <section aria-label="Restaurant suggestions">
       <div class="section-title">
         <div><div class="eyebrow">A PLACE WORTH TRYING</div><h2>Ideas around <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span></h2></div>
-        <small id="aiParsingTag">Sample ideas · verify before visiting</small>
+        <small id="aiParsingTag">Real OpenStreetMap listings · verify details</small>
       </div>
       <div class="results-grid" id="resultsContainer"></div>
       <div style="text-align:center; margin-top:18px">
@@ -634,7 +653,7 @@
       <div class="side-panel intro-panel">
         <div class="side-caption">THE LITTLE DATE-NIGHT GUIDE</div>
         <h3>Let's make a plan ♡</h3>
-        <p id="aiSummaryBox">These are inspiration ideas, not verified live restaurant listings. For accurate places, hours, ratings and menus in any city, use Search Google Maps, then save your favorites here.</p>
+        <p id="aiSummaryBox">Searching real restaurant listings. Discover places by location, cuisine, or AI-assisted requests. OpenStreetMap data may not include current hours or prices.</p>
         <button class="btn" style="margin-top:15px;background:#fff7ec;border-color:#d9c4af" onclick="openAddSpotModal()">＋ Save a place we found</button>
       </div>
       <div class="side-panel" id="our-list">
@@ -642,7 +661,7 @@
         <h3>♡ Saved places (<span id="savedCount">0</span>)</h3>
         <div class="tabs-container" id="tabsContainer"></div>
         <ul class="saved-list" id="savedContainer"></ul>
-        <div class="save-note">Your list is saved on this device, not synced across phones yet.
+        <div class="save-note">Your saved restaurants stay on this device until shared cloud sync is enabled.
           <div style="margin-top:8px"><button class="inline-link" onclick="shareOurList()">↗ Copy our saved list</button></div>
         </div>
       </div>
@@ -655,9 +674,9 @@
       <h2 id="modalRestName">Restaurant Name</h2>
       <p id="modalRestCuisine" style="color:#897266;font-size:12px;margin:8px 0 15px">Cuisine</p>
       <hr style="margin-bottom:16px;border:0;border-top:1px solid #e8dbce">
-      <h3 style="margin-bottom:12px;font-family:'Playfair Display',Georgia,serif;font-weight:600">Sample menu ideas</h3>
+      <h3 style="margin-bottom:12px;font-family:'Playfair Display',Georgia,serif;font-weight:600">Restaurant menu</h3>
       <div id="menuItemsList"></div>
-      <p class="form-help" style="margin-top:16px">Menus and prices shown here may be examples. Check the current menu before visiting.</p>
+      <p class="form-help" style="margin-top:16px">Check the restaurant’s latest menu and prices before visiting.</p>
       <a id="externalMenuLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-menu" style="text-decoration:none;width:100%">↗ Look up current menu</a>
     </div>
   </div>
@@ -680,455 +699,6 @@
 
 
 
-  <script>
-    const localDatabase = {
-      "Hollywood, FL": [
-        { 
-          name: "Thanks To Harrison", cuisine: "American / Cafe ☕", rating: "4.9", recScore: "99%", address: "2001 Harrison St", price: "$$", phone: "(954) 505-3210", hours: "7:30 AM - 4:00 PM", tags: ["Breakfast", "Outdoor Seating", "Vegan Friendly", "Cafe"], aiInsight: "Ideal for quiet morning coffee and artisan poached egg toast.",
-          menu: [
-            { item: "Avocado & Poached Egg Toast", price: "$14.50", desc: "Sourdough, smashed avocado, microgreens, chili flakes" },
-            { item: "Harrison Espresso Bowl", price: "$12.00", desc: "Acai, espresso shot drizzle, granola, fresh berries" }
-          ]
-        },
-        { 
-          name: "LEMONICA", cuisine: "Mediterranean 🥙", rating: "4.8", recScore: "97%", address: "1817 N Young Cir", price: "$$", phone: "(954) 391-7788", hours: "11:00 AM - 10:00 PM", tags: ["Halal Options", "Dine-In", "Cocktails", "Mediterranean"], aiInsight: "Top recommendation for authentic lamb shawarma & falafel.",
-          menu: [
-            { item: "Lamb Shawarma Platter", price: "$19.00", desc: "Slow-roasted lamb, saffron rice, tzatziki, warm pita" },
-            { item: "Crispy Falafel Bowl", price: "$15.50", desc: "House falafel, tahini drizzle, pickled turnips" }
-          ]
-        },
-        { 
-          name: "Tótem Beach Resto bar", cuisine: "Seafood & Bar 🍹", rating: "4.8", recScore: "96%", address: "1928 Hollywood Blvd", price: "$$$", phone: "(954) 920-1123", hours: "12:00 PM - 12:00 AM", tags: ["Ocean View", "Live Music", "Seafood", "Tacos"], aiInsight: "Vibrant atmosphere with fresh ceviche and beachfront vibes.",
-          menu: [
-            { item: "Totem Ceviche Classico", price: "$18.50", desc: "Local whitefish, leche de tigre, sweet potato" },
-            { item: "Grilled Mahi-Mahi Tacos", price: "$17.00", desc: "Chipotle aioli, mango salsa, purple cabbage slaw" }
-          ]
-        },
-        { 
-          name: "Florio's Italian Pizza", cuisine: "Pizza & Italian 🍕", rating: "4.7", recScore: "94%", address: "2000 Hollywood Blvd", price: "$$", phone: "(954) 925-2400", hours: "11:30 AM - 11:00 PM", tags: ["Pizza", "Italian", "Takeout"], aiInsight: "Hand-tossed wood-fired pizzas with fresh mozzarella.",
-          menu: [
-            { item: "Margherita Wood-Fired Pizza", price: "$16.00", desc: "San Marzano tomatoes, fresh mozzarella, basil" },
-            { item: "Truffle Mushroom Pizza", price: "$19.50", desc: "Wild mushrooms, truffle cream, fontina cheese" }
-          ]
-        }
-      ]
-    };
-
-    const mockDb = {
-      cuisines: ["Tacos 🌮", "Pizza 🍕", "Sushi 🍣", "Burgers 🍔", "Ramen 🍜", "Bistro 🍷", "Seafood 🦀", "Cafe ☕"],
-      names: ["The Golden", "Neon", "Salty", "Happy", "Urban", "Mama's", "Crispy", "Velvet", "Rustic", "Little"]
-    };
-
-    let savedSpots = JSON.parse(localStorage.getItem('nibble_saved')) || [];
-    let currentResults = [];
-    let filteredResults = [];
-    let visibleCount = 6;
-    let activeTab = 'All';
-    let currentFilter = 'all';
-    let currentSearchKeyword = '';
-
-    function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-    function getOpenTableUrl(name, location) {
-      return `https://www.opentable.com/s?term=${encodeURIComponent(name + ' ' + location)}`;
-    }
-
-    function getGoogleMapsUrl(name, address, location) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + (address || '') + ' ' + location)}`;
-    }
-
-    function getAppleMapsUrl(name, address, location) {
-      return `https://maps.apple.com/?q=${encodeURIComponent(name)}&address=${encodeURIComponent((address || '') + ' ' + location)}`;
-    }
-
-    /* Natural Language Parser & Real Search Routing */
-    function runAiSmartSearch() {
-      const rawQuery = document.getElementById('aiSearchInput').value.trim();
-      if (!rawQuery) return searchRestaurants("Hollywood, FL", "");
-
-      let targetLocation = "";
-      let keyword = "";
-
-      // Check if user typed "food in location" (e.g. "Tacos in Miami" or "Pizza in Downtown Hollywood")
-      if (rawQuery.toLowerCase().includes(" in ")) {
-        const parts = rawQuery.split(/\s+in\s+/i);
-        keyword = parts[0].trim();
-        targetLocation = parts[1].trim();
-      } else {
-        // If query looks like a location phrase, use it as location; otherwise use as keyword
-        const locationKeywords = ["fl", "ca", "ny", "tx", "miami", "hollywood", "la", "york", "fort", "beach", "downtown", "city"];
-        const isLoc = locationKeywords.some(lk => rawQuery.toLowerCase().includes(lk));
-        
-        if (isLoc) {
-          targetLocation = rawQuery;
-          keyword = "";
-        } else {
-          targetLocation = document.getElementById('currentLoc').innerText || "Hollywood, FL";
-          keyword = rawQuery;
-        }
-      }
-
-      currentSearchKeyword = keyword.toLowerCase();
-      searchRestaurants(targetLocation, keyword);
-    }
-
-    // Keep the original local preview; never invent restaurants, ratings or contact details for other cities.
-    function generateMockData(location) {
-      const baseData = localDatabase[location] || [];
-      return baseData.map((item, i) => ({
-        ...item,
-        id: location.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + i,
-        location
-      }));
-    }
-
-    function searchRestaurants(loc = "Hollywood, FL", keyword = "") {
-      // Format capitalization
-      const formattedLoc = loc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\b(Fl|Ca|Ny|Tx|Ga|Il)\b/g, s => s.toUpperCase());
-      currentSearchKeyword = keyword.toLowerCase();
-      document.getElementById('currentLoc').innerText = formattedLoc;
-      document.getElementById('statLoc').innerText = formattedLoc;
-
-      currentResults = generateMockData(formattedLoc, keyword);
-      applyCurrentFilter();
-
-      document.getElementById('aiSummaryBox').textContent = currentResults.length
-        ? 'These are starter ideas for this area. Ratings, menus and hours are not live. Verify details on Google Maps before visiting.'
-        : 'No locally prepared preview ideas for this city. Choose Search Google Maps to explore real restaurants, then tap “Save a place we found” to add favorites here.';
-    }
-
-    function setFilter(element, filterType) {
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      element.classList.add('active');
-      currentFilter = filterType;
-      applyCurrentFilter();
-    }
-
-    function applyCurrentFilter() {
-      filteredResults = currentResults.filter(spot => {
-        // Keyword text matching
-        const matchesKeyword = !currentSearchKeyword || 
-          spot.name.toLowerCase().includes(currentSearchKeyword) ||
-          spot.cuisine.toLowerCase().includes(currentSearchKeyword) ||
-          (spot.tags && spot.tags.some(t => t.toLowerCase().includes(currentSearchKeyword)));
-
-        // Filter Chip matching
-        let matchesChip = true;
-        if (currentFilter === 'high-rating') {
-          matchesChip = parseFloat(spot.rating) >= 4.7;
-        } else if (currentFilter === 'budget') {
-          matchesChip = spot.price.length <= 2;
-        } else if (currentFilter !== 'all') {
-          matchesChip = spot.cuisine.toLowerCase().includes(currentFilter) ||
-            (spot.tags && spot.tags.some(t => t.toLowerCase().includes(currentFilter)));
-        }
-
-        return matchesKeyword && matchesChip;
-      });
-
-      visibleCount = 6;
-      updateStats();
-      renderResults();
-    }
-
-    function updateStats() {
-      document.getElementById('statCount').innerText = filteredResults.length;
-      if (filteredResults.length > 0) {
-        const avg = (filteredResults.reduce((acc, curr) => acc + parseFloat(curr.rating), 0) / filteredResults.length).toFixed(1);
-        document.getElementById('statRating').innerText = `${avg} ⭐`;
-        document.getElementById('statMatch').innerText = filteredResults[0].recScore || '98%';
-      } else {
-        document.getElementById('statRating').innerText = "N/A";
-        document.getElementById('statMatch').innerText = "0%";
-      }
-    }
-
-    function loadMore() {
-      visibleCount += 6;
-      renderResults();
-    }
-
-    function openMenuModal(spotId) {
-      const spot = currentResults.find(r => r.id === spotId) || savedSpots.find(s => s.id === spotId);
-      if (!spot) return;
-
-      document.getElementById('modalRestName').innerText = spot.name;
-      document.getElementById('modalRestCuisine').innerText = `${spot.cuisine} • ⭐ ${spot.rating} (${spot.price})`;
-      
-      const menuContainer = document.getElementById('menuItemsList');
-      menuContainer.innerHTML = '';
-
-      if (spot.menu && spot.menu.length > 0) {
-        spot.menu.forEach(m => {
-          menuContainer.innerHTML += `
-            <div class="menu-item">
-              <div>
-                <strong>${m.item}</strong>
-                <p style="font-size:0.8rem; color:#666;">${m.desc}</p>
-              </div>
-              <span style="font-weight:bold; color:var(--primary); margin-left:10px;">${m.price}</span>
-            </div>
-          `;
-        });
-      }
-
-      document.getElementById('externalMenuLink').href = `https://www.google.com/search?q=${encodeURIComponent(spot.name + ' ' + spot.location + ' menu')}`;
-      document.getElementById('menuModal').classList.add('active');
-    }
-
-    function closeMenuModal() {
-      document.getElementById('menuModal').classList.remove('active');
-    }
-
-    /* Fixed Browser Geolocation Logic */
-    function useMyLocation() {
-      const geoBtn = document.getElementById('geoBtn');
-      const searchInput = document.getElementById('aiSearchInput');
-
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
-        return;
-      }
-
-      geoBtn.innerText = "⏳ Locating...";
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
-              headers: { 'Accept': 'application/json' }
-            });
-
-            if (!res.ok) throw new Error('Geocoding failed');
-
-            const data = await res.json();
-            const addr = data.address || {};
-            const city = addr.city || addr.town || addr.suburb || addr.village || addr.municipality || addr.county || "My Area";
-
-            searchInput.value = city;
-            currentSearchKeyword = '';
-            searchRestaurants(city, '');
-          } catch (err) {
-            console.warn('Geocoding lookup issue:', err);
-            searchInput.value = "My Area";
-            currentSearchKeyword = '';
-            searchRestaurants("My Area", '');
-          } finally {
-            geoBtn.innerText = "📍 Locate Me";
-          }
-        },
-        (error) => {
-          geoBtn.innerText = "📍 Locate Me";
-          switch(error.code) {
-            case error.PERMISSION_DENIED:
-              alert("Location permission denied. Please allow location access in your browser settings.");
-              break;
-            case error.POSITION_UNAVAILABLE:
-              alert("Location information is currently unavailable.");
-              break;
-            case error.TIMEOUT:
-              alert("Location request timed out. Please try again.");
-              break;
-            default:
-              alert("An error occurred while retrieving location.");
-              break;
-          }
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    function toggleSave(id) {
-      const index = savedSpots.findIndex(item => item.id === id);
-      if (index > -1) {
-        savedSpots.splice(index, 1);
-      } else {
-        const item = currentResults.find(r => r.id === id) || savedSpots.find(s => s.id === id);
-        if (item) savedSpots.push(item);
-      }
-      localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
-      renderResults();
-      renderSaved();
-    }
-
-    function setTab(loc) {
-      activeTab = loc;
-      renderSaved();
-    }
-
-    function renderResults() {
-      const container = document.getElementById('resultsContainer');
-      const loadMoreBtn = document.getElementById('loadMoreBtn');
-      container.innerHTML = '';
-
-      const itemsToShow = filteredResults.slice(0, visibleCount);
-
-      if (itemsToShow.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div><div style="font-size:30px;margin-bottom:9px">🍽️</div><strong>Let’s find your next favorite table</strong><p style="margin:9px 0 15px;font-size:12px">Preview ideas aren’t available here. Browse live restaurants on Maps, then save your favorites to our list.</p><button class="btn btn-ai" onclick="openLiveSearch()">↗ Search real restaurants</button></div></div>';
-        loadMoreBtn.style.display = 'none';
-        return;
-      }
-
-      itemsToShow.forEach(spot => {
-        const isSaved = savedSpots.some(s => s.id === spot.id);
-        const otUrl = getOpenTableUrl(spot.name, spot.location);
-        const gUrl = getGoogleMapsUrl(spot.name, spot.address, spot.location);
-        const aUrl = getAppleMapsUrl(spot.name, spot.address, spot.location);
-
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <span class="card-tag">${spot.price}</span>
-          <div>
-            <h3>${spot.name}</h3>
-            <p>${spot.cuisine} • ⭐ ${spot.rating}</p>
-            <span class="rec-score">✦ Preview idea · verify details</span>
-
-            <div class="ai-insight-box">
-              💡 ${spot.aiInsight || 'Explore the details before planning a visit.'}
-            </div>
-
-            <div class="meta-details">
-              <div>📍 ${spot.address}</div>
-              <div>📞 ${spot.phone}</div>
-              <div>🕒 ${spot.hours}</div>
-              <div style="margin-top:6px;">
-                ${(spot.tags || []).map(t => `<span class="badge-pill">${t}</span>`).join('')}
-              </div>
-            </div>
-
-            <div class="card-actions">
-              <div class="action-row">
-                <a href="${otUrl}" target="_blank" class="link-btn btn-opentable">🍷 Reserve</a>
-                <button onclick="openMenuModal('${spot.id}')" class="link-btn btn-menu">📜 Menu</button>
-              </div>
-              <div class="action-row">
-                <a href="${gUrl}" target="_blank" class="link-btn btn-google">🗺️ Google</a>
-                <a href="${aUrl}" target="_blank" class="link-btn btn-apple">🍏 Apple</a>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-footer">
-            <small style="color:#666">📍 ${spot.location}</small>
-            <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${spot.id}')">
-              ${isSaved ? '❤️' : '🤍'}
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      loadMoreBtn.style.display = visibleCount < filteredResults.length ? 'inline-block' : 'none';
-    }
-
-    function renderSaved() {
-      const tabsContainer = document.getElementById('tabsContainer');
-      const savedContainer = document.getElementById('savedContainer');
-      document.getElementById('savedCount').innerText = savedSpots.length;
-      document.getElementById('savedTotal').innerText = savedSpots.length;
-
-      if (savedSpots.length === 0) {
-        tabsContainer.innerHTML = '';
-        savedContainer.innerHTML = '<p class="form-help">Nothing saved just yet. Find a lovely place to try and add it to our little list ♡</p>';
-        return;
-      }
-
-      const locations = ['All', ...new Set(savedSpots.map(s => s.location))];
-      if (!locations.includes(activeTab)) activeTab = 'All';
-
-      tabsContainer.innerHTML = locations.map(loc => `
-        <button class="tab-btn ${loc === activeTab ? 'active' : ''}" onclick="setTab('${loc}')">${loc}</button>
-      `).join('');
-
-      const filtered = activeTab === 'All' ? savedSpots : savedSpots.filter(s => s.location === activeTab);
-
-      savedContainer.innerHTML = '';
-      filtered.forEach(spot => {
-        const otUrl = getOpenTableUrl(spot.name, spot.location);
-        const li = document.createElement('li');
-        li.className = 'saved-item';
-        li.innerHTML = `
-          <div>
-            <strong>${spot.name}</strong>
-            <br><small style="color:#666">${spot.cuisine} • 📍 ${spot.location}</small>
-            <div style="margin-top: 4px; display:flex; gap:10px;">
-              <a href="${otUrl}" target="_blank" style="font-size:0.75rem; color:var(--opentable-red); font-weight:bold;">Book OpenTable 🍷</a>
-              <a href="#" onclick="openMenuModal('${spot.id}'); return false;" style="font-size:0.75rem; color:var(--accent); font-weight:bold;">View Menu 📜</a>
-            </div>
-          </div>
-          <button class="remove-btn" onclick="toggleSave('${spot.id}')">✖</button>
-        `;
-        savedContainer.appendChild(li);
-      });
-    }
-
-
-    function openLiveSearch() {
-      const query = document.getElementById('aiSearchInput').value.trim();
-      const city = document.getElementById('currentLoc').textContent.trim() || 'Hollywood, FL';
-      const text = query ? (/\b(restaurants?|cafes?|coffee|food|dining)\b/i.test(query) ? query : 'restaurants ' + query) : 'restaurants in ' + city;
-      const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(text);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-
-    function openAddSpotModal() {
-      document.getElementById('addSpotModal').classList.add('active');
-      document.getElementById('newSpotLocation').value = document.getElementById('currentLoc').textContent.trim();
-      document.getElementById('newSpotName').focus();
-    }
-    function closeAddSpotModal() {
-      document.getElementById('addSpotModal').classList.remove('active');
-    }
-    function saveCustomSpot() {
-      // Strip markup/control characters before putting user-entered text into the existing card templates.
-      const clean = id => document.getElementById(id).value.trim().replace(/[<>"'`\\]/g, '').replace(/[\x00-\x1f]/g,'').slice(0,170);
-      const name = clean('newSpotName');
-      const location = clean('newSpotLocation');
-      if (!name || !location) return;
-      const spot = {
-        id: 'personal-' + Date.now() + '-' + Math.floor(Math.random() * 100000),
-        name, location,
-        cuisine: clean('newSpotCuisine') || 'Our own pick ♡',
-        address: clean('newSpotAddress') || 'View on Maps',
-        rating: '—', price: '$', phone: 'Check listing',
-        hours: 'Check listing', recScore: '—', tags: ['Our pick'],
-        aiInsight: 'A place saved for our next food adventure.',
-        menu: []
-      };
-      savedSpots.push(spot);
-      localStorage.setItem('nibble_saved', JSON.stringify(savedSpots));
-      activeTab = 'All';
-      renderSaved();
-      renderResults();
-      document.getElementById('customSpotForm').reset();
-      closeAddSpotModal();
-      document.getElementById('our-list').scrollIntoView({behavior:'smooth',block:'start'});
-    }
-    async function shareOurList() {
-      if (!savedSpots.length) { alert('Save a restaurant first, then copy your list.'); return; }
-      const text = 'Our NibbleSpot restaurant list ♡\n\n' +
-        savedSpots.map(s => '♡ ' + s.name + ' — ' + s.location +
-          (s.cuisine ? ' (' + s.cuisine + ')' : '')).join('\n') +
-        '\n\nFind restaurants: https://restaurant.ajdapp.org';
-      try {
-        if (navigator.share) await navigator.share({title:'Our NibbleSpot list',text});
-        else if (navigator.clipboard) { await navigator.clipboard.writeText(text); alert('Our saved list was copied!'); }
-        else window.prompt('Copy our list:',text);
-      } catch (error) {
-        if (error.name !== 'AbortError') window.prompt('Copy our list:',text);
-      }
-    }
-
-    document.getElementById('aiSearchInput').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') runAiSmartSearch();
-    });
-
-    searchRestaurants("Hollywood, FL", "");
-    renderSaved();
-  </script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
