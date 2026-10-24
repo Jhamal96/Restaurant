@@ -1,0 +1,18 @@
+{
+  "name": "NibbleSpot – Our Table",
+  "short_name": "NibbleSpot",
+  "description": "Discover real restaurants and save places for date nights and travel.",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f9f5ee",
+  "theme_color": "#ad5c45",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
