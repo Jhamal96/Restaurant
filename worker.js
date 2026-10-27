@@ -178,7 +178,12 @@ function makeSpot(el,loc){
  const hours=text(t.opening_hours||'',110);
  const tags=[cuisine,...[t.takeaway==='yes'?'Takeout':null,t.outdoor_seating==='yes'?'Outdoor seating':null,t.vegan==='yes'?'Vegan-friendly':null,t.wheelchair==='yes'?'Accessible':null,t['diet:vegetarian']==='yes'?'Vegetarian options':null].filter(Boolean)].filter(Boolean);
  const website=text(t.website||t['contact:website']||'',250);
- return {id:'osm-'+el.type+'-'+el.id,name,cuisine,location:loc,address,lat,lon,phone:text(t.phone||t['contact:phone']||'',45),hours,website:/^https?:\/\//i.test(website)?website:'',price:'',rating:null,recScore:'',tags,aiInsight:'Listed on OpenStreetMap. '+(cuisine!=='Restaurant'?'Cuisine: '+cuisine+'. ':'')+'Check the restaurant for current details.',menu:[]};
+ const details=restaurantDetailsFromTags(t);
+ return {id:'osm-'+el.type+'-'+el.id,name,cuisine,location:loc,address:details.address||address,lat,lon,
+   phone:details.phone||text(t.phone||t['contact:phone']||'',45),hours:details.hours||hours,
+   website:/^https?:\/\//i.test(website)?website:details.website,description:details.description,
+   menuUrl:details.menuUrl,email:details.email,operator:details.operator,amenities:details.amenities,
+   price:'',rating:null,recScore:'',tags,aiInsight:'Listed on OpenStreetMap. '+(cuisine!=='Restaurant'?'Cuisine: '+cuisine+'. ':'')+'Check the restaurant for current details.',menu:[]};
 }
 // Overpass provides detailed OSM listings. Photon offers a smaller, faster OSM fallback.
 const fallbackHost=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
@@ -415,18 +420,26 @@ async function restaurantDetails(request,env){
  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/restaurant-detail?v=1&entity='+entity+'&id='+osm[2]);
  const cache=caches.default,hit=await cache.match(cacheKey);
  if(hit)return hit;
+ const asResponse=async record=>{
+   const details=restaurantDetailsFromTags(record.tags||{});
+   const response=json({details});
+   response.headers.set('cache-control','public,max-age=600');
+   await cache.put(cacheKey,response.clone());
+   return response;
+ };
+ // An exact OSM element read avoids a costly area query and works even when Overpass is busy.
+ try{
+   const data=await apiFetch('https://api.openstreetmap.org/api/0.6/'+entity+'/'+osm[2]+'.json',{},6000);
+   const record=(data.elements||[]).find(e=>String(e.id)===osm[2]&&e.type===entity);
+   if(record)return asResponse(record);
+ }catch{}
  const query='[out:json][timeout:12];'+entity+'('+osm[2]+');out body center;';
  for(const host of fallbackHost){
    try{
      const data=await apiFetch(host,{method:'POST',
-       headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},7500);
+       headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},5900);
      const record=(data.elements||[]).find(e=>String(e.id)===osm[2]&&e.type===entity);
-     if(!record)continue;
-     const details=restaurantDetailsFromTags(record.tags||{});
-     const response=json({details});
-     response.headers.set('cache-control','public,max-age=600');
-     await cache.put(cacheKey,response.clone());
-     return response;
+     if(record)return asResponse(record);
    }catch{}
  }
  return json({details:null,message:'Additional OpenStreetMap details are temporarily unavailable. Use the map links to check the latest information.'});
