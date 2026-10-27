@@ -364,6 +364,74 @@ async function nearby(lat,lon,location,q=''){
  if(!fallback.length)throw Error('Restaurant providers are temporarily busy. Try again soon.');
  return dedupeAndRank(fallback,q,lat,lon).slice(0,90);
 }
+/* Extra information is loaded only when a visitor opens a restaurant.
+   Validate OSM identifiers strictly; never interpolate raw query text into Overpass. */
+function restaurantDetailsFromTags(t){
+ const string=(...keys)=>{for(const key of keys){const val=text(t[key]||'',250);if(val)return val}return ''};
+ const amenities=[
+  ['Takeout',t.takeaway==='yes'],['Delivery',t.delivery==='yes'],
+  ['Outdoor seating',t.outdoor_seating==='yes'],['Wheelchair accessible',t.wheelchair==='yes'],
+  ['Reservations',t.reservation==='yes'],['Vegan options',t['diet:vegan']==='yes'],
+  ['Vegetarian options',t['diet:vegetarian']==='yes'],['Wi-Fi',t.internet_access==='wlan']
+ ].filter(x=>x[1]).map(x=>x[0]);
+ const address=[string('addr:housenumber'),string('addr:street'),string('addr:city'),
+  string('addr:state'),string('addr:postcode')].filter(Boolean).join(', ');
+ return {address,phone:string('contact:phone','phone'),website:string('contact:website','website'),
+   hours:string('opening_hours'),cuisine:string('cuisine').replace(/;/g,', '),
+   description:string('description','description:en'),
+   menuUrl:string('website:menu','contact:menu','menu:website','menu:uri'),
+   email:string('contact:email','email'),amenities,
+   operator:string('operator'),source:'OpenStreetMap'};
+}
+async function restaurantDetails(request,env){
+ const u=new URL(request.url),id=text(u.searchParams.get('id'),110);
+ const osm=/^osm-(node|way|relation|N|W|R)-(\d{1,18})$/.exec(id);
+ if(!osm){
+   if(/^google-[A-Za-z0-9_-]{8,180}$/.test(id)&&env.GOOGLE_MAPS_API_KEY){
+     const googleId=id.slice(7),controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),7300);
+     try{
+       const response=await fetch('https://places.googleapis.com/v1/places/'+encodeURIComponent(googleId),{
+         signal:controller.signal,headers:{
+           'X-Goog-Api-Key':env.GOOGLE_MAPS_API_KEY,
+           'X-Goog-FieldMask':'id,displayName,formattedAddress,location,googleMapsUri,websiteUri,nationalPhoneNumber,regularOpeningHours.weekdayDescriptions,rating,userRatingCount'
+         }
+       });
+       if(!response.ok)return json({details:null,message:'Google details are unavailable. Open Google Maps for current information.'});
+       const p=await response.json();
+       return json({details:{
+         address:text(p.formattedAddress,250),website:text(p.websiteUri,250),
+         phone:text(p.nationalPhoneNumber,70),hours:Array.isArray(p.regularOpeningHours?.weekdayDescriptions)
+           ?p.regularOpeningHours.weekdayDescriptions.map(x=>text(x,100)).join('\n'):'',
+         rating:numberIn(p.rating,0,5),ratingCount:numberIn(p.userRatingCount,0,100000000),
+         googleMapsUrl:text(p.googleMapsUri,350),
+         amenities:[],source:'Google Places'
+       }});
+     }catch{return json({details:null,message:'Google details are temporarily unavailable.'})}
+     finally{clearTimeout(timeout)}
+   }
+   return json({details:null,message:'Detailed records are not available for this listing.'});
+ }
+ const entity={N:'node',W:'way',R:'relation'}[osm[1]]||osm[1];
+ const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/restaurant-detail?v=1&entity='+entity+'&id='+osm[2]);
+ const cache=caches.default,hit=await cache.match(cacheKey);
+ if(hit)return hit;
+ const query='[out:json][timeout:12];'+entity+'('+osm[2]+');out body center;';
+ for(const host of fallbackHost){
+   try{
+     const data=await apiFetch(host,{method:'POST',
+       headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},7500);
+     const record=(data.elements||[]).find(e=>String(e.id)===osm[2]&&e.type===entity);
+     if(!record)continue;
+     const details=restaurantDetailsFromTags(record.tags||{});
+     const response=json({details});
+     response.headers.set('cache-control','public,max-age=600');
+     await cache.put(cacheKey,response.clone());
+     return response;
+   }catch{}
+ }
+ return json({details:null,message:'Additional OpenStreetMap details are temporarily unavailable. Use the map links to check the latest information.'});
+}
+
 async function restaurantSearch(request,env,isAI){
  let args;
  if(isAI){
@@ -442,6 +510,7 @@ export default {async fetch(request,env){
  if(path==='/api/health')return json({ok:true,service:'NibbleSpot',search:'Overpass/Photon',ai:!!env.AI,googlePlaces:!!env.GOOGLE_MAPS_API_KEY,version:'2026.10.26'});
  if(path==='/api/locations'&&request.method==='GET')return locationSuggestions(request);
  if(path==='/api/restaurant-suggestions'&&request.method==='GET')return restaurantSuggestions(request);
+ if(path==='/api/restaurant-details'&&request.method==='GET')return restaurantDetails(request,env);
  if(path==='/api/search'&&request.method==='GET')return restaurantSearch(request,env,false);
  if(path==='/api/ai-search'&&request.method==='POST')return restaurantSearch(request,env,true);
  if(path.startsWith('/api/'))return json({error:'Not found'},404);
