@@ -232,6 +232,52 @@ jobs:
           assert d.get('source','').startswith('OpenStreetMap'), d
           PY
 
+      - name: Verify interactive restaurant cards and on-demand detail records
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in details.js app.js; do
+            curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/$file" -o "$file"
+            node --check "$file"
+          done
+          curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/" -o restaurant-details-index.html
+          curl -fsSL --max-time 25 "https://restaurant.ajdapp.org/api/restaurant-details?id=not-a-restaurant" -o invalid-details.json
+          curl -fsSL --max-time 50 "https://restaurant.ajdapp.org/api/search?location=Miami%2C%20FL&q=Versailles" -o restaurant-details-list.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import urlopen
+          html=Path('restaurant-details-index.html').read_text()
+          js=Path('details.js').read_text()
+          app=Path('app.js').read_text()
+          invalid=json.loads(Path('invalid-details.json').read_text())
+          assert invalid.get('details') is None, invalid
+          assert 'id="restaurantDetailsModal"' in html
+          assert 'id="restaurantDetailContent"' in html
+          assert 'id="detailDirectionsBtn"' in html
+          assert 'src="/details.js"' in html
+          for tab in ['overview','contact','map']:
+              assert 'data-detail-tab="'+tab+'"' in html, tab
+          assert '/api/restaurant-details?id=' in js
+          assert 'function openById' in js and 'function close' in js
+          assert 'restaurant-detail-map' in js
+          assert 'window.showRestaurantDetails' in js
+          assert "container.querySelectorAll('.card[data-details-id]')" in app
+          assert 'saved-details-btn' in app
+          results=json.loads(Path('restaurant-details-list.json').read_text()).get('results',[])
+          osm_ids=[r['id'] for r in results if r.get('id','').startswith('osm-')]
+          if osm_ids:
+              with urlopen('https://restaurant.ajdapp.org/api/restaurant-details?id='+osm_ids[0],timeout=32) as response:
+                  data=json.load(response)
+              assert 'details' in data, data
+              if data['details']:
+                  assert data['details'].get('source') == 'OpenStreetMap', data
+                  print('Live detail fields:',list(data['details']))
+              else:
+                  print('Upstream OSM detail provider unavailable; graceful fallback:',data.get('message'))
+          print('Interactive restaurant details and source validation verified')
+          PY
+
       - name: Check exact names, wider restaurant discovery, and Google fallback
         shell: bash
         run: |
