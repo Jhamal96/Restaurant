@@ -232,6 +232,7 @@ function chooseRestaurantSuggestion(spot){
  setMessage('Exact OpenStreetMap restaurant match: '+spot.name+'. Check current hours and details before visiting.');
  applyCurrentFilter();
  byId('resultsContainer').scrollIntoView({behavior:'smooth',block:'nearest'});
+ window.showRestaurantDetailsSpot?.(selectedRestaurant,restaurantInput);
 }
 function showRestaurantSuggestions(places,message){
  restaurantSuggestions=Array.isArray(places)?places:[];
@@ -411,7 +412,7 @@ function renderResults(){
    const id=String(spot.id),saved=savedSpots.some(s=>String(s.id)===id);
    const url=spot.provider==='Google Places'&&spot.googleMapsUrl?safeUrl(spot.googleMapsUrl):getGoogleMapsUrl(spot.name,spot.address,spot.location);
    const appleUrl=getAppleMapsUrl(spot.name,spot.address,spot.location,spot.lat,spot.lon);
-   return '<article class="card">'+
+   return '<article class="card" data-details-id="'+esc(id)+'" tabindex="0" aria-label="View restaurant information for '+esc(spot.name)+'">'+
    '<span class="card-tag">'+esc(spot.price||'Local listing')+'</span>'+
    '<div><h3>'+esc(spot.name)+'</h3><p>'+esc(spot.cuisine||'Restaurant')+(spot.rating?' · ⭐ '+esc(spot.rating):'')+'</p>'+
    '<span class="rec-score">'+(spot.provider==='Google Places'?'G Google Places listing':'✓ OpenStreetMap listing')+'</span>'+
@@ -420,6 +421,7 @@ function renderResults(){
    (spot.phone?'<div>☎ '+esc(spot.phone)+'</div>':'')+
    (spot.hours?'<div>🕒 '+esc(spot.hours)+'</div>':'')+
    '<div style="margin-top:6px">'+(spot.tags||[]).slice(0,3).map(t=>'<span class="badge-pill">'+esc(t)+'</span>').join('')+'</div></div>'+
+   '<div class="card-details-cta" aria-hidden="true">View restaurant details ↗</div>'+
    '<div class="card-actions"><div class="action-row">'+
    '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-google" aria-label="Open '+esc(spot.name)+' in Google Maps">🗺️ Google Maps</a>'+
    '<a href="'+esc(appleUrl)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-apple" aria-label="Open '+esc(spot.name)+' in Apple Maps">🍎 Apple Maps</a></div>'+
@@ -433,6 +435,13 @@ function renderResults(){
  }).join('');
  // Use element-bound IDs instead of relying on escaped inline JavaScript strings.
  container.querySelectorAll('.save-btn').forEach(btn=>{btn.onclick=()=>toggleSave(btn.dataset.osmId);});
+ container.querySelectorAll('.card[data-details-id]').forEach(card=>{
+   const show=()=>window.showRestaurantDetails?.(card.dataset.detailsId,card);
+   card.addEventListener('click',event=>{if(!event.target.closest('a,button'))show();});
+   card.addEventListener('keydown',event=>{
+     if((event.key==='Enter'||event.key===' ')&&event.target===card){event.preventDefault();show();}
+   });
+ });
  more.style.display=visibleCount<filteredResults.length?'inline-flex':'none';
 }
 function storeSaved(){try{localStorage.setItem('nibble_saved',JSON.stringify(savedSpots))}catch(e){alert('This browser could not save your places. Check its storage settings.')}renderSaved();renderResults();}
@@ -454,7 +463,10 @@ function renderSaved(){
    const map=document.createElement('a');map.href=getGoogleMapsUrl(spot.name,spot.address,spot.location);map.target='_blank';map.rel='noopener noreferrer';map.textContent='Directions ↗';map.style.cssText='font-size:11px;color:#996149;font-weight:800';
    const apple=document.createElement('a');apple.href=getAppleMapsUrl(spot.name,spot.address,spot.location,spot.lat,spot.lon);apple.target='_blank';apple.rel='noopener noreferrer';apple.textContent='Apple Maps ↗';apple.style.cssText=map.style.cssText;
    const book=document.createElement('a');book.href=getOpenTableUrl(spot.name,spot.location);book.target='_blank';book.rel='noopener noreferrer';book.textContent='Find tables ↗';book.style.cssText=map.style.cssText;
-   links.append(map,apple,book);info.append(links);
+   const details=document.createElement('button');details.type='button';details.className='saved-details-btn';
+   details.textContent='ⓘ View details';details.setAttribute('aria-label','View details for '+(spot.name||'restaurant'));
+   details.addEventListener('click',()=>window.showRestaurantDetailsSpot?.(spot,details));
+   links.append(details,map,apple,book);info.append(links);
    const remove=document.createElement('button');remove.className='remove-btn';remove.textContent='✕';remove.setAttribute('aria-label','Remove '+spot.name);remove.onclick=()=>toggleSave(spot.id);
    li.append(info,remove);return li;
  }));
