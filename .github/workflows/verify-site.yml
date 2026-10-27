@@ -149,7 +149,7 @@ jobs:
           assert 'function autoCapitalizeWords' in a, 'Missing input capitalization'
           assert 'function openAppleMapsSearch' in a and 'maps.apple.com' in a
           assert '🍎 Apple Maps' in a, 'No Apple Maps restaurant card link'
-          assert "links.append(map,apple,book)" in a, 'No Apple Maps saved link'
+          assert "links.append(details,map,apple,book)" in a, 'No Apple Maps or detail links on saved restaurants'
           assert 'Apple Maps Search' in i, 'No Apple Maps search control'
           for name in ('NibbleSpot-Windows-Setup.exe','NibbleSpot-macOS.dmg','NibbleSpot-Android.apk'):
               assert name in d, 'Missing downloadable option: '+name
