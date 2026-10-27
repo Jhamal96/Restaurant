@@ -1,6 +1,7 @@
 // NibbleSpot Cloudflare Worker. Deployment bundles public files into STATIC_FILES.
 const STATIC_FILES = {};
 const AI_USAGE = new Map();
+const GOOGLE_USAGE = new Map();
 const JSON_HEADERS={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:JSON_HEADERS})}
 function text(v,max=110){return String(v==null?'':v).trim().slice(0,max)}
@@ -277,29 +278,91 @@ async function restaurantSuggestions(request){
  }catch(e){return json({suggestions:[],message:'Name suggestions are temporarily unavailable. You can still search by name or cuisine.'})}
 }
 
-async function nearby(lat,lon,location,q='') {
- // A targeted Photon search is more responsive for named cuisines than large Overpass area queries.
- // Photon returns OSM-backed places, so we never fabricate a restaurant.
- if(q && keywords(q).length) {
+
+const CUISINE_ONLY=/^(?:pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|vegetarian|steak|steakhouse|burgers?|cafe|coffee|breakfast|brunch|bbq|barbecue|mediterranean|french|american|korean|greek|caribbean|haitian|cuban|restaurants?|food|fast food)(?:\s+(?:food|restaurants?|nearby))?$/i;
+function isGenericCuisine(q){return CUISINE_ONLY.test(String(q).trim())}
+function escapeOverpassRegex(value){return value.replace(/[.*+?^$\{\}()|[\]\\]/g,'\\$&').slice(0,95)}
+async function namedOverpass(lat,lon,location,q){
+ const needle=escapeOverpassRegex(text(q,90));
+ if(needle.length<3)return [];
+ const query='[out:json][timeout:15];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"]["name"~"'+needle+'",i](around:40000,'+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 110;';
+ for(const url of fallbackHost){
+   try{
+     const data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},8500);
+     return (data.elements||[]).map(el=>makeSpot(el,location)).filter(Boolean)
+       .filter(spot=>withinKm(lat,lon,spot.lat,spot.lon)<=40&&nameRelevance(spot.name,q)>0);
+   }catch(e){}
+ }
+ return [];
+}
+function dedupeAndRank(spots,q,lat,lon){
+ const seen=new Set();
+ return spots.filter(s=>{
+   const key=String(s.id||'')+'|'+normalize(s.name);
+   const spatial=normalize(s.name)+'|'+Math.round(s.lat*14000)+'|'+Math.round(s.lon*14000);
+   if(seen.has(key)||seen.has(spatial))return false;
+   seen.add(key);seen.add(spatial);return true;
+ }).sort((a,b)=>nameRelevance(b.name,q)-nameRelevance(a.name,q)||
+    withinKm(lat,lon,a.lat,a.lon)-withinKm(lat,lon,b.lat,b.lon));
+}
+/* Google Places (New) is opt-in via a server-side secret, never a client API key.
+   Google results are never added to OpenStreetMap's long-lived cache. */
+async function searchGooglePlaces(env,request,q,location,lat,lon){
+ if(!env.GOOGLE_MAPS_API_KEY||!q.trim())return null;
+ const key=request.headers.get('CF-Connecting-IP')||'anonymous';
+ const now=Date.now(),history=(GOOGLE_USAGE.get(key)||[]).filter(t=>now-t<3600000);
+ if(history.length>=20)return null;
+ history.push(now);GOOGLE_USAGE.set(key,history);
+ const body={textQuery:q+' restaurant in '+location,pageSize:15,
+   locationBias:{circle:{center:{latitude:lat,longitude:lon},radius:35000}}};
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8500);
+ try{
+   const response=await fetch('https://places.googleapis.com/v1/places:searchText',{
+     method:'POST',signal:controller.signal,headers:{
+       'Content-Type':'application/json',
+       'X-Goog-Api-Key':env.GOOGLE_MAPS_API_KEY,
+       'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.location,places.googleMapsUri,places.types'
+     },body:JSON.stringify(body)
+   });
+   if(!response.ok)return null;
+   const data=await response.json();
+   return (data.places||[]).filter(p=>p.id&&p.displayName?.text&&
+     Number.isFinite(p.location?.latitude)&&Number.isFinite(p.location?.longitude))
+     .map(p=>({
+       id:'google-'+p.id,name:text(p.displayName.text,120),location,
+       address:text(p.formattedAddress,180),lat:p.location.latitude,lon:p.location.longitude,
+       cuisine:(p.types||[]).includes('cafe')?'Cafe':'Restaurant',
+       price:'',rating:null,phone:'',hours:'',website:'',menu:[],
+       tags:['Google Places'],provider:'Google Places',googleMapsUrl:text(p.googleMapsUri,350),
+       aiInsight:'Google Places listing. Open Google Maps for latest details, reviews, photos and hours.'
+     })).filter(s=>withinKm(lat,lon,s.lat,s.lon)<=55);
+ }catch{return null}
+ finally{clearTimeout(timer)}
+}
+
+async function nearby(lat,lon,location,q=''){
+ if(q&&keywords(q).length&&!isGenericCuisine(q)){
+   const direct=await photonRestaurants(lat,lon,location,q);
+   const named=direct.filter(s=>nameRelevance(s.name,q)>0&&withinKm(lat,lon,s.lat,s.lon)<=40);
+   if(named.length)return dedupeAndRank(named,q,lat,lon).slice(0,90);
+   return dedupeAndRank(await namedOverpass(lat,lon,location,q),q,lat,lon).slice(0,90);
+ }
+ if(q&&keywords(q).length){
    const direct=await photonRestaurants(lat,lon,location,q);
    const matching=direct.filter(s=>matchesQuery(s,q));
-   if(matching.length)return matching;
+   if(matching.length)return dedupeAndRank(matching,q,lat,lon).slice(0,90);
  }
- const radius=6600;
- const query='[out:json][timeout:18];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 130;';
- let data=null,error=null;
+ const radius=13000;
+ const query='[out:json][timeout:18];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 280;';
+ let data=null;
  for(const url of fallbackHost){
-  try {data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},6500);break}
-  catch(e){error=e}
+   try{data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},7800);break}
+   catch(e){}
  }
- if(!data){
-   const results=await photonRestaurants(lat,lon,location,q);
-   if(!results.length)throw Error('Restaurant providers are temporarily busy. Try again soon. '+(error?.message||''));
-   return results;
- }
- const spots=(data.elements||[]).map(e=>makeSpot(e,location)).filter(Boolean);
- const seen=new Set();
- return spots.filter(s=>{const key=normalize(s.name)+'|'+normalize(s.address);if(seen.has(key))return false;seen.add(key);return true}).slice(0,110);
+ if(data)return dedupeAndRank((data.elements||[]).map(e=>makeSpot(e,location)).filter(Boolean),q,lat,lon).slice(0,280);
+ const fallback=await photonRestaurants(lat,lon,location,q);
+ if(!fallback.length)throw Error('Restaurant providers are temporarily busy. Try again soon.');
+ return dedupeAndRank(fallback,q,lat,lon).slice(0,90);
 }
 async function restaurantSearch(request,env,isAI){
  let args;
@@ -337,14 +400,19 @@ async function restaurantSearch(request,env,isAI){
  // Even when inference is unavailable, keep a city mentioned in a natural-language query.
  const inCity=q.match(/^(.*?)\s+in\s+([^,]+(?:,\s*[a-zA-Z]{2,})?)$/i);
  if(inCity){q=text(inCity[1],70);location=text(inCity[2],100)||location;}
- const foodKeyword=q.match(/\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\b/i);
- if(foodKeyword&&keywords(q).length>1)q=foodKeyword[1];
+ // Full names must be preserved: "Pizza Hut" must not become "pizza".
  // Keep explicit cuisine from the user's request if the AI returns an unrelated interpretation.
  const explicitCuisine=text(args.q,150).match(/\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\b/i);
  if(isAI && explicitCuisine)q=explicitCuisine[1];
  try{
   const coords=lat!==null&&lon!==null?[lat,lon]:await resolveLocation(location);
-  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
+  const google=await searchGooglePlaces(env,request,q,location,coords[0],coords[1]);
+  if(google?.length){
+    const ranked=dedupeAndRank(google,q,coords[0],coords[1]).slice(0,20);
+    return json({location,results:ranked,aiNote,source:'Google Places',googleEnabled:true,
+      message:'Found '+ranked.length+' Google Places listings near '+location+'. Open Google Maps for current business information.'});
+  }
+  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby-v2?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
   const cache=caches.default;let spots;
   const hit=await cache.match(cacheKey);
   if(hit){spots=await hit.json()}
@@ -357,13 +425,13 @@ async function restaurantSearch(request,env,isAI){
   let matches=spots.filter(s=>matchesQuery(s,q));
   if(q&&matches.length===0&&keywords(q).length===0)matches=spots;
   if(q)matches.sort((a,b)=>nameRelevance(b.name,q)-nameRelevance(a.name,q));
-  const note=matches.length?'Showing '+matches.length+' real restaurant listings near '+location+'. OpenStreetMap does not supply verified ratings or reservation availability.':'No matching restaurants were found in this OpenStreetMap area. Try another cuisine or nearby location.';
-  return json({location,results:matches.slice(0,90),aiNote,message:note,source:'OpenStreetMap · Overpass · Photon'});
+  const note=matches.length?'Found '+matches.length+' real OpenStreetMap restaurant listings near '+location+'. Verify hours and details before visiting.':'No exact OpenStreetMap match in '+location+'. Use Google Maps Search below to look more broadly.';
+  return json({location,results:matches.slice(0,90),aiNote,message:note,source:'OpenStreetMap · Overpass · Photon',googleEnabled:!!env.GOOGLE_MAPS_API_KEY});
  }catch(e){return json({error:'Unable to search this area right now. '+text(e.message,140)},503)}
 }
 export default {async fetch(request,env){
  const url=new URL(request.url);let path=url.pathname;
- if(path==='/api/health')return json({ok:true,service:'NibbleSpot',search:'Overpass/Photon',ai:!!env.AI,version:'2026.10.24'});
+ if(path==='/api/health')return json({ok:true,service:'NibbleSpot',search:'Overpass/Photon',ai:!!env.AI,googlePlaces:!!env.GOOGLE_MAPS_API_KEY,version:'2026.10.26'});
  if(path==='/api/locations'&&request.method==='GET')return locationSuggestions(request);
  if(path==='/api/restaurant-suggestions'&&request.method==='GET')return restaurantSuggestions(request);
  if(path==='/api/search'&&request.method==='GET')return restaurantSearch(request,env,false);
