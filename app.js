@@ -24,18 +24,27 @@ function getGoogleResearchUrl(q,city){
  return 'https://www.google.com/search?q='+encodeURIComponent(
    q?('"'+q+'" '+city+' restaurant hours menu reviews'):(city+' restaurants'));
 }
+function openResearchUrl(url){
+ // Native Android WebViews normally block target=_blank windows. Navigate instead:
+ // MainActivity intercepts external https links and launches the device's browser.
+ if(/Android/i.test(navigator.userAgent)&&/;\\s*wv[);]/i.test(navigator.userAgent)){
+   window.location.assign(url);
+ }else{
+   window.open(url,'_blank','noopener,noreferrer');
+ }
+}
 function openGoogleMapsSearch(){
  const {q,city}=getSearchParts();
- window.open(getGoogleMapsDeepUrl(q,city),'_blank','noopener,noreferrer');
+ openResearchUrl(getGoogleMapsDeepUrl(q,city));
 }
 function openGoogleResearch(){
  const {q,city}=getSearchParts();
- window.open(getGoogleResearchUrl(q,city),'_blank','noopener,noreferrer');
+ openResearchUrl(getGoogleResearchUrl(q,city));
 }
 function openAppleMapsSearch(){
  const {q,city}=getSearchParts();
  const what=[q||'restaurants',city].filter(Boolean).join(' in ');
- window.open('https://maps.apple.com/?q='+encodeURIComponent(what),'_blank','noopener,noreferrer');
+ openResearchUrl('https://maps.apple.com/?q='+encodeURIComponent(what));
 }
 function autoCapitalizeWords(value){
  return String(value||'').replace(/(^|[\s\-\/])(\p{L})/gu,(match,sep,letter)=>sep+letter.toLocaleUpperCase())
@@ -476,6 +485,14 @@ window.addEventListener('appinstalled',()=>{installPrompt=null;window.NibbleSpot
  if(input){input.setAttribute('autocapitalize','words');input.addEventListener('blur',()=>capitalizeField(input));}
 });
 
+
+// Make Google's fallback links work inside the existing Android APK too.
+document.addEventListener('click',event=>{
+ if(!(/Android/i.test(navigator.userAgent)&&/;\\s*wv[);]/i.test(navigator.userAgent)))return;
+ const link=event.target.closest?.('a[target="_blank"]');
+ if(!link||!/^https:\/\/(?:www\\.)?google\\.com\//i.test(link.href))return;
+ event.preventDefault();window.location.assign(link.href);
+});
 
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 renderSaved();
