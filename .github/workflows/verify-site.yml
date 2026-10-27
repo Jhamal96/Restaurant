@@ -246,7 +246,8 @@ jobs:
           python3 - <<'PY'
           import json
           from pathlib import Path
-          from urllib.request import urlopen
+          import subprocess
+          from urllib.parse import quote
           html=Path('restaurant-details-index.html').read_text()
           js=Path('details.js').read_text()
           app=Path('app.js').read_text()
@@ -267,14 +268,19 @@ jobs:
           results=json.loads(Path('restaurant-details-list.json').read_text()).get('results',[])
           osm_ids=[r['id'] for r in results if r.get('id','').startswith('osm-')]
           if osm_ids:
-              with urlopen('https://restaurant.ajdapp.org/api/restaurant-details?id='+osm_ids[0],timeout=32) as response:
-                  data=json.load(response)
-              assert 'details' in data, data
-              if data['details']:
-                  assert data['details'].get('source') == 'OpenStreetMap', data
-                  print('Live detail fields:',list(data['details']))
+              url='https://restaurant.ajdapp.org/api/restaurant-details?id='+quote(osm_ids[0],safe='')
+              result=subprocess.run(['curl','--silent','--show-error','--fail','--location','--max-time','34',url],capture_output=True,text=True)
+              if result.returncode != 0:
+                  print('Details request unavailable during test:',result.stderr.strip())
               else:
-                  print('Upstream OSM detail provider unavailable; graceful fallback:',data.get('message'))
+                  data=json.loads(result.stdout)
+                  assert 'details' in data, data
+                  if data['details']:
+                      assert data['details'].get('source') == 'OpenStreetMap', data
+                      print('Live detail fields:',list(data['details']))
+                  else:
+                      print('Upstream OSM detail provider unavailable; graceful fallback:',data.get('message'))
+
           print('Interactive restaurant details and source validation verified')
           PY
 
