@@ -389,6 +389,10 @@ function loadMore(){visibleCount+=8;renderResults()}
 function renderResults(){
  const container=byId('resultsContainer'),more=byId('loadMoreBtn');
  if(!filteredResults.length){
+   if(currentResults.length && currentFilter!=='all'){
+     container.innerHTML='<div class="empty-state"><div><strong>No restaurants match this filter</strong><p style="font-size:12px;margin:12px 0">We found restaurants nearby, but none match the selected category. Clear the filter to see all verified listings.</p><button class="btn btn-ai" onclick="document.querySelector(\'.filter-chip\').click()">Show all restaurants</button></div></div>';
+     more.style.display='none';return;
+   }
    const q=currentSearchKeyword,city=currentLoc;
    const maps=getGoogleMapsDeepUrl(q,city),web=getGoogleResearchUrl(q,city);
    container.innerHTML='<div class="empty-state deep-search-empty"><div><div style="font-size:28px">⌕</div><strong>No verified in-app match yet</strong><p style="font-size:12px;margin:12px 0">This restaurant may be missing from OpenStreetMap. Search Google Maps or Google Search using the exact restaurant name and location — no guessed listings.</p><div class="deep-fallback-actions"><a class="btn btn-ai" href="'+esc(maps)+'" target="_blank" rel="noopener noreferrer">🗺️ Search Google Maps</a><a class="btn" href="'+esc(web)+'" target="_blank" rel="noopener noreferrer">⌕ Search Google Web</a></div></div></div>';
