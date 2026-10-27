@@ -14,6 +14,24 @@ function getAppleMapsUrl(name,address,location,lat,lon) {
  if(Number.isFinite(Number(lat)) && Number.isFinite(Number(lon)) && lat!==undefined && lon!==undefined && lat!==null && lon!==null) params.set('ll',Number(lat)+','+Number(lon));
  return 'https://maps.apple.com/?'+params.toString();
 }
+
+/* Search Google using BOTH exact fields. No Google API key is exposed in HTML. */
+function googleSearchTerms(q,city){return [q||'restaurants',city].filter(Boolean).join(' in ')}
+function getGoogleMapsDeepUrl(q,city){
+ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(googleSearchTerms(q,city));
+}
+function getGoogleResearchUrl(q,city){
+ return 'https://www.google.com/search?q='+encodeURIComponent(
+   q?('"'+q+'" '+city+' restaurant hours menu reviews'):(city+' restaurants'));
+}
+function openGoogleMapsSearch(){
+ const {q,city}=getSearchParts();
+ window.open(getGoogleMapsDeepUrl(q,city),'_blank','noopener,noreferrer');
+}
+function openGoogleResearch(){
+ const {q,city}=getSearchParts();
+ window.open(getGoogleResearchUrl(q,city),'_blank','noopener,noreferrer');
+}
 function openAppleMapsSearch(){
  const {q,city}=getSearchParts();
  const what=[q||'restaurants',city].filter(Boolean).join(' in ');
@@ -31,7 +49,7 @@ function capitalizeField(input){
 
 function getOpenTableUrl(name,location) {return 'https://www.opentable.com/s?term='+encodeURIComponent(name+' '+location)}
 function setMessage(message,isError=false){ searchInfo.textContent=message;searchInfo.style.color=isError?'#a13e33':''; }
-function setBusy(flag){loading=flag; const b=byId('regularSearchBtn');if(b){b.disabled=flag;b.textContent=flag?'Searching…':'⌕ Find restaurants'} const ai=byId('aiSearchBtn');if(ai){ai.disabled=flag;ai.textContent=flag?'Finding places…':'✦ AI Search'} }
+function setBusy(flag){loading=flag; const b=byId('regularSearchBtn');if(b){b.disabled=flag;b.textContent=flag?'Deep searching…':'⌕ Deep restaurant search'} const ai=byId('aiSearchBtn');if(ai){ai.disabled=flag;ai.textContent=flag?'Finding places…':'✦ AI Search'} }
 /* Accessible, Google-style location autocomplete.
    Only requests location text (never GPS) after a short typing pause. */
 let suggestedLocations=[],locationOptionIndex=-1,locationSuggestTimer=null;
@@ -304,6 +322,14 @@ async function apiRequest(url, options, timeout=32000) {
 }
 async function searchRestaurants(loc=currentLoc,keyword='',coords=null,ai=false){
   const requestId=++requestNum;
+  // Previous cuisine filters should never hide new exact-name results.
+  currentFilter='all';
+  document.querySelectorAll('.filter-chip').forEach((chip,i)=>chip.classList.toggle('active',i===0));
+  const tools=byId('googleResearchTools');
+  if(tools){tools.hidden=!keyword.trim();
+   byId('googleMapsDeepLink').href=getGoogleMapsDeepUrl(keyword,loc);
+   byId('googleWebDeepLink').href=getGoogleResearchUrl(keyword,loc);
+  }
   currentLoc=autoCapitalizeWords(clean(loc))||currentLoc;
   currentSearchKeyword=keyword.trim();
   byId('cityInput').value=currentLoc;
@@ -318,6 +344,11 @@ async function searchRestaurants(loc=currentLoc,keyword='',coords=null,ai=false)
     const data=ai?await apiRequest(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)},36000):await apiRequest(path+'?'+new URLSearchParams(params));
     if(requestId!==requestNum)return;
     currentResults=Array.isArray(data.results)?data.results:[];
+    // Display the actual provider; Google Places is only active with a server-side API key.
+    const providerLabel=byId('searchSourceNote');
+    if(providerLabel)providerLabel.textContent=data.source==='Google Places'
+      ? 'Google Places results · powered by Google Maps'
+      : 'Real OpenStreetMap listings · Google Maps search available';
     currentLoc=autoCapitalizeWords(data.location||currentLoc);
     byId('cityInput').value=currentLoc;
     setMessage(data.message || (currentResults.length?'Actual restaurant listings from OpenStreetMap. Verify hours and details before visiting.':'No listings returned. Try a nearby city or broader cuisine.'));
@@ -358,16 +389,19 @@ function loadMore(){visibleCount+=8;renderResults()}
 function renderResults(){
  const container=byId('resultsContainer'),more=byId('loadMoreBtn');
  if(!filteredResults.length){
-   container.innerHTML='<div class="empty-state"><div><div style="font-size:28px">🍽️</div><strong>No matching restaurants yet</strong><p style="font-size:12px;margin:12px 0">Try a different city, a broader cuisine, or reset the filter. Our information comes from OpenStreetMap, so coverage may vary.</p><button class="btn btn-ai" onclick="document.querySelector(\'.filter-chip\').click()">All restaurants</button></div></div>';more.style.display='none';return;
+   const q=currentSearchKeyword,city=currentLoc;
+   const maps=getGoogleMapsDeepUrl(q,city),web=getGoogleResearchUrl(q,city);
+   container.innerHTML='<div class="empty-state deep-search-empty"><div><div style="font-size:28px">⌕</div><strong>No verified in-app match yet</strong><p style="font-size:12px;margin:12px 0">This restaurant may be missing from OpenStreetMap. Search Google Maps or Google Search using the exact restaurant name and location — no guessed listings.</p><div class="deep-fallback-actions"><a class="btn btn-ai" href="'+esc(maps)+'" target="_blank" rel="noopener noreferrer">🗺️ Search Google Maps</a><a class="btn" href="'+esc(web)+'" target="_blank" rel="noopener noreferrer">⌕ Search Google Web</a></div></div></div>';
+   more.style.display='none';return;
  }
  container.innerHTML=filteredResults.slice(0,visibleCount).map(spot=>{
    const id=String(spot.id),saved=savedSpots.some(s=>String(s.id)===id);
-   const url=getGoogleMapsUrl(spot.name,spot.address,spot.location);
+   const url=spot.provider==='Google Places'&&spot.googleMapsUrl?safeUrl(spot.googleMapsUrl):getGoogleMapsUrl(spot.name,spot.address,spot.location);
    const appleUrl=getAppleMapsUrl(spot.name,spot.address,spot.location,spot.lat,spot.lon);
    return '<article class="card">'+
    '<span class="card-tag">'+esc(spot.price||'Local listing')+'</span>'+
    '<div><h3>'+esc(spot.name)+'</h3><p>'+esc(spot.cuisine||'Restaurant')+(spot.rating?' · ⭐ '+esc(spot.rating):'')+'</p>'+
-   '<span class="rec-score">✓ OpenStreetMap listing</span>'+
+   '<span class="rec-score">'+(spot.provider==='Google Places'?'G Google Places listing':'✓ OpenStreetMap listing')+'</span>'+
    '<div class="ai-insight-box">✦ '+esc(spot.aiInsight||'Explore this restaurant and save it for later.')+'</div>'+
    '<div class="meta-details"><div>📍 '+esc(spot.address||spot.location)+'</div>'+
    (spot.phone?'<div>☎ '+esc(spot.phone)+'</div>':'')+
@@ -378,10 +412,14 @@ function renderResults(){
    '<a href="'+esc(appleUrl)+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-apple" aria-label="Open '+esc(spot.name)+' in Apple Maps">🍎 Apple Maps</a></div>'+
    '<div class="action-row"><a href="'+esc(spot.website?safeUrl(spot.website):'https://www.google.com/search?q='+encodeURIComponent(spot.name+' '+spot.location+' menu'))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-menu">↗ '+(spot.website?'Website':'Menu lookup')+'</a>'+
    '<a href="'+esc(getOpenTableUrl(spot.name,spot.location))+'" target="_blank" rel="noopener noreferrer" class="link-btn btn-opentable">♡ Find tables</a></div></div></div>'+
-   '<div class="card-footer"><small>📍 '+esc(spot.location)+'</small><button class="save-btn '+(saved?'saved':'')+'" onclick="toggleSave('+JSON.stringify(id).replace(/"/g,'&quot;')+')" aria-label="'+(saved?'Remove saved restaurant':'Save restaurant')+'">'+(saved?'♥':'♡')+'</button></div></article>';
+   '<div class="card-footer"><small>📍 '+esc(spot.location)+'</small>'+
+   (spot.provider==='Google Places'
+      ? '<small>Google result · see Google Maps for current details</small>'
+      : '<button class="save-btn '+(saved?'saved':'')+'" data-osm-id="'+esc(id)+'" aria-label="'+(saved?'Remove saved restaurant':'Save restaurant')+'">'+(saved?'♥':'♡')+'</button>')+
+   '</div></article>';
  }).join('');
  // Use element-bound IDs instead of relying on escaped inline JavaScript strings.
- container.querySelectorAll('.save-btn').forEach((btn,i)=>{btn.onclick=()=>toggleSave(String(filteredResults[i].id));});
+ container.querySelectorAll('.save-btn').forEach(btn=>{btn.onclick=()=>toggleSave(btn.dataset.osmId);});
  more.style.display=visibleCount<filteredResults.length?'inline-flex':'none';
 }
 function storeSaved(){try{localStorage.setItem('nibble_saved',JSON.stringify(savedSpots))}catch(e){alert('This browser could not save your places. Check its storage settings.')}renderSaved();renderResults();}
@@ -424,7 +462,7 @@ async function shareOurList(){
 }
 function openMenuModal(id){const spot=currentResults.find(s=>s.id===id)||savedSpots.find(s=>s.id===id);if(!spot)return;byId('modalRestName').textContent=spot.name;byId('modalRestCuisine').textContent=spot.cuisine||'Restaurant';byId('menuItemsList').textContent='See the restaurant’s current menu online. This app does not invent menu items or prices.';byId('externalMenuLink').href='https://www.google.com/search?q='+encodeURIComponent(spot.name+' '+spot.location+' menu');byId('menuModal').classList.add('active')}
 function closeMenuModal(){byId('menuModal').classList.remove('active')}
-function openLiveSearch(){const{q,city}=getSearchParts();window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([q||'restaurants',city].join(' in ')),'_blank','noopener,noreferrer')}
+function openLiveSearch(){openGoogleMapsSearch()}
 function openDownload(){location.href='/download'}
 function installNibbleSpot(){if(window.NibbleSpotInstallState?.isInstalled())return;if(installPrompt){const p=installPrompt;installPrompt=null;p.prompt();return}const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);alert(ios?'In Safari, tap Share and choose Add to Home Screen.':'Use your browser menu and choose Install app, or visit our Download page for the Android APK.')}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();if(window.NibbleSpotInstallState?.isInstalled())return;installPrompt=e;const b=byId('installAppBtn');if(b)b.hidden=false});
