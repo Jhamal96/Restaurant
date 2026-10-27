@@ -262,6 +262,9 @@ jobs:
           assert 'googleMapsDeepLink' in html and 'googleWebDeepLink' in html
           assert 'Search Google Maps' in html
           assert 'No restaurants match this filter' in app
+          assert 'function openResearchUrl' in app
+          assert 'window.location.assign(url)' in app
+          assert 'window.location.assign(link.href)' in app
           assert 'No verified in-app match yet' in app
           assert 'googlePlaces' in health
           print('Google Places API configured:',health['googlePlaces'])
