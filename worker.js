@@ -392,8 +392,16 @@ async function restaurantSearch(request,env,isAI){
      const payload=answer?.response;
      const raw=typeof payload==='string'?payload:String(answer?.choices?.[0]?.message?.content||'');
      const obj=payload && typeof payload==='object'?payload:JSON.parse(raw.match(/\{[\s\S]*?\}/)?.[0]||'{}');
-     if(typeof obj.location==='string'&&obj.location.length<=100)location=text(obj.location)||location;
+     // A selected geocoded location must not be overwritten by AI interpretation.
+     if((lat===null||lon===null)&&typeof obj.location==='string'&&obj.location.length<=100)location=text(obj.location)||location;
      if(typeof obj.cuisine==='string'&&obj.cuisine.length<=80)q=text(obj.cuisine);
+     // Users may press AI Search with a literal venue name: preserve that name.
+     const literalName=text(args.q,150).trim();
+     if(literalName&&!isGenericCuisine(literalName)&&/^[\p{L}\p{N}\s&'.-]{3,65}$/u.test(literalName)
+       &&literalName.split(/\s+/).length<=5
+       &&!/(?:\b)(?:best|top|cheap|cozy|romantic|near|with|under|over|find|show|want|looking)(?:\b)/i.test(literalName)){
+       q=literalName;
+     }
      aiNote='✦ AI interpreted your request'+(obj.vibe?' ('+text(obj.vibe,65)+')':'')+'.';
    } catch(e){aiNote='AI is temporarily unavailable, so we used a regular restaurant search.';}
  }
@@ -403,7 +411,7 @@ async function restaurantSearch(request,env,isAI){
  // Full names must be preserved: "Pizza Hut" must not become "pizza".
  // Keep explicit cuisine from the user's request if the AI returns an unrelated interpretation.
  const explicitCuisine=text(args.q,150).match(/\b(pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanese|indian|chinese|thai|vegan|steak|burgers?|cafe|coffee|breakfast|brunch)\b/i);
- if(isAI && explicitCuisine)q=explicitCuisine[1];
+ if(isAI && explicitCuisine && isGenericCuisine(args.q))q=explicitCuisine[1];
  try{
   const coords=lat!==null&&lon!==null?[lat,lon]:await resolveLocation(location);
   const google=await searchGooglePlaces(env,request,q,location,coords[0],coords[1]);
