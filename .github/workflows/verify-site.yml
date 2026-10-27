@@ -261,6 +261,8 @@ jobs:
           assert 'getGoogleMapsDeepUrl' in app and 'getGoogleResearchUrl' in app
           assert 'googleMapsDeepLink' in html and 'googleWebDeepLink' in html
           assert 'Search Google Maps' in html
+          assert 'No restaurants match this filter' in app
+          assert 'No verified in-app match yet' in app
           assert 'googlePlaces' in health
           print('Google Places API configured:',health['googlePlaces'])
           print('Deep search and fallback UI verified.')
