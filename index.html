@@ -638,6 +638,67 @@
     .deep-search-empty{min-height:245px}
     .deep-fallback-actions{margin-top:15px}
     @media(max-width:720px){.google-research-tools{align-items:stretch}.google-research-actions{width:100%}.google-research-actions .btn{flex:1}}
+
+    /* Clickable restaurant cards and the large touch-friendly detail sheet. */
+    .card[data-details-id]{cursor:pointer}
+    .card[data-details-id]:focus-visible{outline:3px solid var(--ns-accent,#ad5c45);outline-offset:3px}
+    .card[data-details-id]:hover .card-details-cta{color:var(--ns-accent,#ad5c45)}
+    .card-details-cta{font-size:12px;font-weight:800;color:var(--ns-accent,#ad5c45);margin-top:10px;display:inline-flex;align-items:center;gap:6px}
+    .saved-details-btn{background:transparent;color:var(--ns-accent,#ad5c45);font-size:11px;font-weight:800;border:0;padding:5px 0;cursor:pointer}
+    .saved-details-btn:focus-visible{outline:2px solid var(--ns-accent,#ad5c45);outline-offset:2px}
+    .restaurant-detail-modal[hidden]{display:none!important}
+    .restaurant-detail-modal{z-index:3200;padding:16px;align-items:center;justify-content:center;background:var(--ns-backdrop,#281d19b8);backdrop-filter:blur(6px)}
+    .restaurant-detail-sheet{
+      display:flex;flex-direction:column;width:min(760px,100%);max-height:min(92dvh,880px);overflow:hidden;
+      background:var(--ns-surface,#fffdfa);color:var(--ns-ink,#352920);
+      border:1px solid var(--ns-line,#e8dace);border-radius:26px;
+      box-shadow:0 30px 90px #0006;text-align:left;
+    }
+    .restaurant-detail-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:24px 27px 16px}
+    .restaurant-detail-kicker{font-size:10px;font-weight:800;letter-spacing:2px;color:var(--ns-accent,#ad5c45)}
+    #detailTitle{font:600 clamp(27px,4vw,38px)/1.18 'Playfair Display',Georgia,serif;letter-spacing:-.4px;margin:10px 0 8px;overflow-wrap:anywhere}
+    #detailSubtitle{font-size:12px;color:var(--ns-subtle,#81766e);margin:0;line-height:1.7}
+    .restaurant-detail-close{width:39px;height:39px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;background:var(--ns-soft,#f4e8dc);color:var(--ns-ink,#352920);border:1px solid var(--ns-line,#e8dace);cursor:pointer;font-size:17px}
+    .restaurant-detail-tabs{display:flex;gap:5px;padding:0 23px;border-bottom:1px solid var(--ns-line,#e8dace);overflow-x:auto}
+    .restaurant-detail-tabs button{background:transparent;color:var(--ns-subtle,#81766e);padding:14px 13px;border:0;border-bottom:3px solid transparent;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+    .restaurant-detail-tabs button[aria-selected="true"]{color:var(--ns-accent,#ad5c45);border-bottom-color:var(--ns-accent,#ad5c45)}
+    .restaurant-detail-tabs button:focus-visible,.restaurant-detail-close:focus-visible,.restaurant-detail-footer :focus-visible{outline:3px solid var(--ns-focus,#b37660);outline-offset:2px}
+    .restaurant-detail-content{overflow-y:auto;padding:22px 27px 26px;flex:1;overscroll-behavior:contain}
+    .restaurant-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+    .restaurant-detail-item{border:1px solid var(--ns-line,#e8dace);background:var(--ns-raised,#fffaf3);border-radius:14px;padding:16px;min-width:0}
+    .restaurant-detail-item.wide{grid-column:1/-1}
+    .restaurant-detail-item label{display:block;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--ns-subtle,#81766e);text-transform:uppercase;margin-bottom:7px}
+    .restaurant-detail-item strong,.restaurant-detail-item .detail-value{font-size:13px;line-height:1.65;font-weight:600;color:var(--ns-ink,#352920);overflow-wrap:anywhere}
+    .restaurant-detail-item p{font-size:12px;color:var(--ns-subtle,#81766e);line-height:1.65;margin:7px 0 0}
+    .restaurant-detail-item a{font-size:12px;color:var(--ns-accent,#ad5c45);font-weight:800;word-break:break-word}
+    .restaurant-detail-pills{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 18px}
+    .restaurant-detail-pills span{font-size:11px;color:var(--ns-soft-ink,#775443);background:var(--ns-soft,#f4e8dc);padding:7px 11px;border-radius:100px;font-weight:700}
+    .restaurant-detail-section-label{font:600 21px 'Playfair Display',Georgia,serif;margin:5px 0 12px}
+    .restaurant-detail-research{border:1px dashed var(--ns-line,#e8dace);padding:15px;border-radius:14px;margin-top:14px;color:var(--ns-subtle,#81766e);font-size:12px;line-height:1.6;background:var(--ns-raised,#fffaf3)}
+    .restaurant-detail-research a{color:var(--ns-accent,#ad5c45);font-weight:800}
+    .restaurant-detail-hours{white-space:pre-line}
+    .restaurant-detail-map{width:100%;height:350px;border:1px solid var(--ns-line,#e8dace);border-radius:18px;background:var(--ns-raised,#fffaf3);overflow:hidden}
+    .restaurant-detail-map iframe{width:100%;height:100%;border:0;background:var(--ns-raised,#fffaf3)}
+    .restaurant-map-links{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+    .restaurant-map-links .btn{text-decoration:none;flex:1;min-width:125px}
+    .restaurant-detail-footer{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;align-items:center;padding:15px 27px;border-top:1px solid var(--ns-line,#e8dace);background:var(--ns-raised,#fffaf3)}
+    .restaurant-detail-footer .btn{text-decoration:none}
+    .restaurant-detail-live{min-height:0;margin:0;padding:0 27px;font-size:11px;color:var(--ns-subtle,#81766e)}
+    .restaurant-detail-live:not(:empty){padding-bottom:10px}
+    .restaurant-detail-loading{font-size:12px;color:var(--ns-subtle,#81766e);margin-bottom:15px}
+    @media(max-width:680px){
+      .restaurant-detail-modal{padding:0;align-items:flex-end}
+      .restaurant-detail-sheet{width:100%;max-height:94dvh;border-radius:24px 24px 0 0}
+      .restaurant-detail-top{padding:19px 18px 13px}
+      .restaurant-detail-tabs{padding:0 11px}
+      .restaurant-detail-tabs button{padding:12px 10px;font-size:11px}
+      .restaurant-detail-content{padding:18px}
+      .restaurant-detail-grid{grid-template-columns:1fr}
+      .restaurant-detail-item.wide{grid-column:auto}
+      .restaurant-detail-footer{padding:13px 18px}
+      .restaurant-detail-footer .btn{font-size:11px;flex:1;min-width:90px}
+      .restaurant-detail-map{height:270px}
+    }
   </style>
   <link rel="stylesheet" href="/theme.css">
 </head>
@@ -764,6 +825,32 @@
       <a id="externalMenuLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-menu" style="text-decoration:none;width:100%">↗ Look up current menu</a>
     </div>
   </div>
+  <!-- One interactive, keyboard-accessible restaurant sheet for cards and saved places. -->
+  <div class="modal-overlay restaurant-detail-modal" id="restaurantDetailsModal" hidden>
+    <section class="restaurant-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle" aria-describedby="detailSubtitle">
+      <div class="restaurant-detail-top">
+        <div>
+          <span class="restaurant-detail-kicker">A CLOSER LOOK ♡</span>
+          <h2 id="detailTitle">Restaurant details</h2>
+          <p id="detailSubtitle">Restaurant information and directions</p>
+        </div>
+        <button type="button" class="restaurant-detail-close" id="closeRestaurantDetails" aria-label="Close restaurant details">✕</button>
+      </div>
+      <div class="restaurant-detail-tabs" role="tablist" aria-label="Restaurant information">
+        <button type="button" role="tab" id="detailTabOverview" data-detail-tab="overview" aria-controls="restaurantDetailContent" aria-selected="true">Overview</button>
+        <button type="button" role="tab" id="detailTabContact" data-detail-tab="contact" aria-controls="restaurantDetailContent" aria-selected="false">Hours & contact</button>
+        <button type="button" role="tab" id="detailTabMap" data-detail-tab="map" aria-controls="restaurantDetailContent" aria-selected="false">Map & directions</button>
+      </div>
+      <div id="restaurantDetailContent" class="restaurant-detail-content" role="tabpanel" tabindex="0" aria-live="polite"></div>
+      <div class="restaurant-detail-footer">
+        <button type="button" id="detailSaveBtn" class="btn btn-ai">♡ Save place</button>
+        <button type="button" id="detailShareBtn" class="btn">↗ Share</button>
+        <a id="detailDirectionsBtn" class="btn btn-google-search" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">↗ Directions</a>
+      </div>
+      <p id="detailLiveStatus" class="restaurant-detail-live" role="status"></p>
+    </section>
+  </div>
+
   <div class="modal-overlay" id="addSpotModal" onclick="closeAddSpotModal()">
     <div class="modal-content" role="dialog" aria-modal="true" aria-label="Add a saved restaurant" onclick="event.stopPropagation()">
       <button class="close-modal" onclick="closeAddSpotModal()" aria-label="Close add restaurant">✕</button>
@@ -784,5 +871,6 @@
 
 
   <script src="/app.js" defer></script>
+  <script src="/details.js" defer></script>
 </body>
 </html>
