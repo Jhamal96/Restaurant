@@ -27,7 +27,7 @@ function getGoogleResearchUrl(q,city){
 function openResearchUrl(url){
  // Native Android WebViews normally block target=_blank windows. Navigate instead:
  // MainActivity intercepts external https links and launches the device's browser.
- if(/Android/i.test(navigator.userAgent)&&/;\\s*wv[);]/i.test(navigator.userAgent)){
+ if(/Android/i.test(navigator.userAgent)&&/;\s*wv[);]/i.test(navigator.userAgent)){
    window.location.assign(url);
  }else{
    window.open(url,'_blank','noopener,noreferrer');
@@ -488,9 +488,9 @@ window.addEventListener('appinstalled',()=>{installPrompt=null;window.NibbleSpot
 
 // Make Google's fallback links work inside the existing Android APK too.
 document.addEventListener('click',event=>{
- if(!(/Android/i.test(navigator.userAgent)&&/;\\s*wv[);]/i.test(navigator.userAgent)))return;
+ if(!(/Android/i.test(navigator.userAgent)&&/;\s*wv[);]/i.test(navigator.userAgent)))return;
  const link=event.target.closest?.('a[target="_blank"]');
- if(!link||!/^https:\/\/(?:www\\.)?google\\.com\//i.test(link.href))return;
+ if(!link||!/^https:\/\/(?:www\.)?google\.com\//i.test(link.href))return;
  event.preventDefault();window.location.assign(link.href);
 });
 
