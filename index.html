@@ -621,6 +621,23 @@
       .search-input-group .restaurant-field #aiSearchInput {min-width:0}
       .restaurant-suggestions {min-width:0;max-height:57vh}
     }
+
+    /* Deep name + location lookup, Google Maps and web research fallback */
+    .btn-google-search {background:#426b52!important;border-color:#426b52!important;color:#fff!important}
+    .btn-google-search:hover {background:#325a44!important;border-color:#325a44!important}
+    .google-research-tools[hidden]{display:none!important}
+    .google-research-tools{
+      display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+      margin-top:15px;padding:14px 17px;border:1px solid var(--ns-line,#e8dace);
+      border-radius:16px;background:var(--ns-soft,#f5e8db);color:var(--ns-ink,#352920);
+    }
+    .google-research-tools strong {font-size:12px;font-weight:800}
+    .google-research-tools p{font-size:11px;color:var(--ns-subtle,#81766e);margin:5px 0 0;line-height:1.5}
+    .google-research-actions,.deep-fallback-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px}
+    .google-research-actions .btn,.deep-fallback-actions .btn{display:inline-flex;text-decoration:none;white-space:normal}
+    .deep-search-empty{min-height:245px}
+    .deep-fallback-actions{margin-top:15px}
+    @media(max-width:720px){.google-research-tools{align-items:stretch}.google-research-actions{width:100%}.google-research-actions .btn{flex:1}}
   </style>
   <link rel="stylesheet" href="/theme.css">
 </head>
@@ -664,7 +681,7 @@
       <div>
         <div class="eyebrow">A LITTLE SOMETHING DELICIOUS</div>
         <h2>Where should we eat?</h2>
-        <p class="subcopy">Enter a city, neighborhood, ZIP code or address. Type a restaurant name to see real nearby matches, or search by cuisine and cravings.</p>
+        <p class="subcopy">Search a restaurant by its full name and city, ZIP code or address. Use Deep restaurant search for in-app listings, or Google Maps for the broadest lookup.</p>
       </div>
     </div>
     <div class="search-input-group">
@@ -676,11 +693,20 @@
         <input aria-label="Restaurant name or cuisine" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="restaurantSuggestions" aria-expanded="false" autocomplete="off" type="search" autocapitalize="words" id="aiSearchInput" placeholder="Restaurant name or cuisine (e.g. Versailles, pizza)…">
         <div class="location-suggestions restaurant-suggestions" id="restaurantSuggestions" role="listbox" aria-label="Matching restaurant names" hidden></div>
       </div>
-      <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Find restaurants</button>
+      <button class="btn btn-ai" id="regularSearchBtn" onclick="runAiSmartSearch()">⌕ Deep restaurant search</button>
+      <button class="btn btn-google-search" type="button" onclick="openGoogleMapsSearch()" aria-label="Search the exact restaurant and location in Google Maps">🗺️ Search Google Maps</button>
       <button class="btn btn-ai" id="aiSearchBtn" style="background:#493329;border-color:#493329" onclick="runAiIntentSearch()">✦ AI Search</button>
       <button class="btn btn-geo" id="geoBtn" onclick="useMyLocation()">⌖ Near me</button>
       <button class="btn btn-map" type="button" onclick="openAppleMapsSearch()" title="Find restaurants in Apple Maps" aria-label="Search restaurants in Apple Maps">🍎 Apple Maps Search</button>
+      <button class="btn btn-map" type="button" onclick="openGoogleResearch()" aria-label="Search the restaurant and location on Google Web Search">⌕ Google Web Search</button>
       <a data-install-promo href="/download" class="btn btn-map" style="text-decoration:none">↓ Get the app</a>
+    </div>
+    <div class="google-research-tools" id="googleResearchTools" hidden aria-label="Google search for exact restaurant">
+      <div><strong>Looking for a specific restaurant?</strong><p>For deeper coverage, search your exact restaurant name and chosen location directly on Google.</p></div>
+      <div class="google-research-actions">
+        <a class="btn btn-google-search" id="googleMapsDeepLink" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">🗺️ Google Maps</a>
+        <a class="btn" id="googleWebDeepLink" href="https://www.google.com" target="_blank" rel="noopener noreferrer">⌕ Google Search</a>
+      </div>
     </div>
     <div class="search-tips" aria-label="Search examples"><span>⌖ Neighborhood or ZIP</span><span>⌖ Street address</span><span>🍽 Exact restaurant name</span><span>🥗 Cuisine or craving</span></div>
     <div class="filter-bar" aria-label="Filter restaurant ideas">
@@ -699,7 +725,7 @@
     <section aria-label="Restaurant suggestions">
       <div class="section-title">
         <div><div class="eyebrow">A PLACE WORTH TRYING</div><h2>Ideas around <span id="currentLoc" style="color:var(--primary)">Hollywood, FL</span></h2></div>
-        <small id="aiParsingTag">Real OpenStreetMap listings · verify details</small>
+        <small id="searchSourceNote">Real OpenStreetMap listings · Google Maps search available</small>
       </div>
       <div class="results-grid" id="resultsContainer"></div>
       <div style="text-align:center; margin-top:18px">
