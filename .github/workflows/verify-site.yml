@@ -262,6 +262,9 @@ jobs:
           assert '/api/restaurant-details?id=' in js
           assert 'function openById' in js and 'function close' in js
           assert 'restaurant-detail-map' in js
+          assert 'Hours & contact' in html
+          assert 'Google Maps' in html
+          assert 'id="detailSaveBtn"' in html and 'id="detailShareBtn"' in html
           assert 'window.showRestaurantDetails' in js
           assert "container.querySelectorAll('.card[data-details-id]')" in app
           assert 'saved-details-btn' in app
@@ -281,7 +284,7 @@ jobs:
                   else:
                       print('Upstream OSM detail provider unavailable; graceful fallback:',data.get('message'))
 
-          print('Interactive restaurant details and source validation verified')
+          print('Click-to-open cards, tabs, save, share, directions, and actual element-detail API verified')
           PY
 
       - name: Check exact names, wider restaurant discovery, and Google fallback
