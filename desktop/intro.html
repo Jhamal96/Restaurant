@@ -51,12 +51,26 @@ button:focus-visible,input:focus-visible{outline:3px solid #ad5c45;outline-offse
 @media(max-height:650px){.art{height:142px}.circle{height:116px;width:116px;border-radius:42px}.circle:after{inset:-8px;border-radius:47px}.circle img{height:90px;width:90px}.slide h2{font-size:33px}.splash img{height:100px;width:100px}.splash h1{font-size:38px}}
 @media(max-width:580px){main{padding:20px}.logo{font-size:16px}.art{height:160px}.circle{width:132px;height:132px;border-radius:43px}.circle img{height:94px;width:94px}.slide h2{font-size:34px}.slide p{font-size:14px}.next{min-width:135px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* A small, branded opening animation for the installed desktop app. */
+.splash .ajd-launch-art{position:relative;display:grid;place-items:center;width:176px;height:176px}
+.splash .ajd-launch-art:before,.splash .ajd-launch-art:after{content:"";position:absolute;inset:3px;border:1px solid var(--accent,var(--primary,#8190c7));border-radius:39%;opacity:.2;animation:ajd-launch-orbit .95s ease-out both}
+.splash .ajd-launch-art:after{inset:-9px;border-radius:44%;opacity:.1;animation-delay:.08s}
+.splash .ajd-launch-art img{position:relative;animation:ajd-launch-logo .8s cubic-bezier(.2,.8,.2,1) both}
+.splash h1{animation:ajd-launch-rise .7s .08s both}
+.splash p,.splash .bar,.splash .progress{animation:ajd-launch-rise .7s .16s both}
+@keyframes ajd-launch-logo{from{opacity:0;transform:scale(.88) rotate(-4deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes ajd-launch-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ajd-launch-orbit{from{transform:scale(.82) rotate(-12deg);opacity:0}to{transform:scale(1) rotate(8deg)}}
+@media(max-height:650px){.splash .ajd-launch-art{width:140px;height:140px}}
+@media(prefers-reduced-motion:reduce){.splash .ajd-launch-art:before,.splash .ajd-launch-art:after,.splash .ajd-launch-art img,.splash h1,.splash p,.splash .bar,.splash .progress{animation:none!important}}
+
 </style></head>
 <body>
 <main>
   <div class="top"><div class="logo"><img src="./icon.png" alt=""><div>NibbleSpot<small>OUR TABLE • OUR ADVENTURES</small></div></div>
     <button type="button" id="skip" class="skip hidden">Skip introduction ↗</button></div>
-  <section class="splash" id="splash" aria-live="polite"><img src="./icon.png" alt=""><h1>NibbleSpot ♡</h1><p>Good food. Beautiful memories.</p><div class="progress" role="progressbar" aria-label="Starting NibbleSpot"><i></i></div></section>
+  <section class="splash" id="splash" aria-live="polite"><div class="ajd-launch-art"><img src="./icon.png" alt=""></div><h1>NibbleSpot ♡</h1><p>Good food. Beautiful memories.</p><div class="progress" role="progressbar" aria-label="Starting NibbleSpot"><i></i></div></section>
   <section class="wizard" id="wizard" aria-label="Welcome to NibbleSpot">
    <div class="stage">
     <article class="slide" data-step="0"><span class="count">01 / 03</span><div class="art"><div class="circle"><img src="./icon.png" alt=""></div></div><h2>Every table has a story.</h2><p>Your cozy little place to discover restaurants, plan date nights, and make memories together.</p></article>

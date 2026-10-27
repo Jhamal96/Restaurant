@@ -701,9 +701,57 @@
     }
   </style>
   <link rel="stylesheet" href="/theme.css">
+
+<!-- AJD opening animation: decorative and never blocks the page. -->
+<style>
+:root{--ajd-open-bg:#fbf6ef;--ajd-open-glow:#f0d7c3;--ajd-open-accent:#b46e52;--ajd-open-ink:#513b31;}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]):not([data-appearance="light"]){--ajd-open-bg:#291f1b;--ajd-open-glow:#b46e5244;--ajd-open-ink:#f2f4f7;}
+}
+:root[data-theme="dark"],:root[data-appearance="dark"],:root.dark{--ajd-open-bg:#291f1b;--ajd-open-glow:#b46e5244;--ajd-open-ink:#f2f4f7;}
+:root[data-theme="ultra-dark"],:root[data-theme="ultra"],:root[data-appearance="ultra-dark"],:root.ultra-dark{--ajd-open-bg:#050505;--ajd-open-glow:#b46e5233;--ajd-open-ink:#f5f5f5;}
+.ajd-opening{display:none;}
+html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 50% 36%,var(--ajd-open-glow),transparent 43%),var(--ajd-open-bg);color:var(--ajd-open-ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;animation:ajd-opening-exit 1.55s ease forwards;}
+.ajd-opening-inner{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:min(90vw,480px);padding:24px;animation:ajd-opening-rise .68s cubic-bezier(.2,.8,.2,1) both;}
+.ajd-opening-art{position:relative;display:grid;place-items:center;width:116px;height:116px;margin-bottom:22px;}
+.ajd-opening-art:before,.ajd-opening-art:after{content:"";position:absolute;inset:4px;border:1px solid var(--ajd-open-accent);border-radius:37%;opacity:.18;animation:ajd-opening-orbit 1.4s ease-out both;}
+.ajd-opening-art:after{inset:-6px;border-radius:42%;opacity:.10;animation-delay:.08s;}
+.ajd-opening-mark{position:relative;display:grid;place-items:center;width:86px;height:86px;border-radius:25px;background:var(--ajd-open-bg);box-shadow:0 14px 36px #0002;overflow:hidden;animation:ajd-opening-mark .8s cubic-bezier(.2,.8,.2,1) both;}
+.ajd-opening-fallback{font-weight:850;font-size:22px;letter-spacing:-.07em;color:var(--ajd-open-accent);}
+.ajd-opening-mark img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--ajd-open-bg);}
+.ajd-opening-mark svg{width:50px;height:50px;stroke:var(--ajd-open-accent);}
+.ajd-opening-name{font-size:clamp(22px,5vw,31px);font-weight:800;line-height:1.12;letter-spacing:-.045em;}
+.ajd-opening-caption{margin-top:9px;opacity:.68;font-size:13px;line-height:1.4;}
+.ajd-opening-dots{display:flex;gap:6px;margin-top:21px;color:var(--ajd-open-accent);}
+.ajd-opening-dots i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.34;animation:ajd-opening-dot .8s ease-in-out infinite alternate;}
+.ajd-opening-dots i:nth-child(2){animation-delay:.13s}.ajd-opening-dots i:nth-child(3){animation-delay:.26s}
+@keyframes ajd-opening-exit{0%,68%{opacity:1;visibility:visible}100%{opacity:0;visibility:hidden}}
+@keyframes ajd-opening-rise{from{opacity:0;transform:translateY(11px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ajd-opening-mark{from{opacity:0;transform:scale(.87) rotate(-4deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes ajd-opening-orbit{from{opacity:0;transform:scale(.8) rotate(-12deg)}to{transform:scale(1) rotate(8deg)}}
+@keyframes ajd-opening-dot{to{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce),print{html.ajd-opening-enabled .ajd-opening{display:none!important;}}
+</style>
+<script>
+(function(){
+  try {
+    if ((window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || /Electron\//i.test(navigator.userAgent)) return;
+    if (document.referrer && new URL(document.referrer).origin === location.origin) return;
+    document.documentElement.classList.add('ajd-opening-enabled');
+  } catch (_) { /* The page works normally if the optional animation cannot start. */ }
+})();
+</script>
+
 </head>
 
 <body>
+<div class="ajd-opening" aria-hidden="true"><div class="ajd-opening-inner">
+  <div class="ajd-opening-art"><div class="ajd-opening-mark"><span class="ajd-opening-fallback">N</span><img src="/icon.svg" alt="" onerror="this.style.display='none'"></div></div>
+  <div class="ajd-opening-name">NibbleSpot</div>
+  <div class="ajd-opening-caption">Good food. Beautiful memories.</div>
+  <div class="ajd-opening-dots"><i></i><i></i><i></i></div>
+</div></div>
+
   <header class="topbar">
     <a class="brand" href="#" aria-label="NibbleSpot home">
       <span class="brand-mark">✦</span>
@@ -874,3 +922,4 @@
   <script src="/details.js" defer></script>
 </body>
 </html>
+
