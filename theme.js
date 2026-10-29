@@ -134,7 +134,8 @@
     overlay.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') { event.preventDefault(); close(); return; }
       if (event.key !== 'Tab') return;
-      const focusable = [closeButton, ...overlay.querySelectorAll('.appearance-choice')];
+      // Include controls added to Settings after this panel was constructed.
+      const focusable = [...overlay.querySelectorAll('button:not([disabled])')];
       const index = focusable.indexOf(document.activeElement);
       if (event.shiftKey && index <= 0) { event.preventDefault(); focusable[focusable.length-1].focus(); }
       else if (!event.shiftKey && index === focusable.length-1) { event.preventDefault(); focusable[0].focus(); }
