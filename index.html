@@ -742,6 +742,276 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
 })();
 </script>
 
+<script data-ajd-appearance-v2>
+/* AJD appearance controls: device-local only; never touches app records. */
+(() => {
+  'use strict';
+  if (window.__ajdAppearanceV2) return;
+  window.__ajdAppearanceV2 = true;
+  const app = "restaurant";
+  const surfaces = ".topbar,.nibble-settings-panel,.modal-content,.tabs-container";
+  const storageKey = 'ajd_glass_appearance_v2';
+  const root = document.documentElement;
+  const nativeModes = {
+    break:{key:'theme_pref',ultra:'ultra-dark',fallback:'auto',selector:'#theme-select'},
+    study:{key:'study_brightness_mode',ultra:'ultra-dark',fallback:'system',selector:'#study-appearance-select'},
+    repair:{key:'ajd_theme_preference',ultra:'ultra-dark',fallback:'dark',selector:'#themeMode, #themeSelectSetting'},
+    hub:{key:'theme_pref',ultra:'ultra-dark',fallback:'system',selector:'#theme-select'},
+    download:{key:'ajd-download-theme',ultra:'ultra',fallback:'system',selector:'.theme-select'},
+    garage:{key:'garage_appearance_v1',ultra:'ultra-dark',fallback:'system',selector:'#garageAppearanceSelect'},
+    restaurant:{key:'nibblespot_appearance',ultra:'ultra-dark',fallback:'system',selector:'.appearance-choice[data-appearance]'}
+  };
+  const native = nativeModes[app] || null;
+  let storageWorks = true;
+  function read(key) { try { return localStorage.getItem(key); } catch (_) { storageWorks=false; return null; } }
+  function write(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { storageWorks=false; return false; } }
+  function nativeChoice() { return native ? (read(native.key) || native.fallback) : null; }
+  let state = {enabled:true,level:50,amoled:nativeChoice() === native?.ultra,previous:native?.fallback || null};
+  try {
+    const saved = JSON.parse(read(storageKey) || 'null');
+    if (saved && typeof saved === 'object') {
+      state.enabled = typeof saved.enabled === 'boolean' ? saved.enabled : true;
+      state.level = Number.isFinite(Number(saved.level)) ? Math.max(0, Math.min(100, Number(saved.level))) : 50;
+      state.amoled = typeof saved.amoled === 'boolean' ? saved.amoled : state.amoled;
+      state.previous = typeof saved.previous === 'string' ? saved.previous : state.previous;
+    } else if (app === 'finance') {
+      const old = read('finance_liquid_glass_appearance_v1');
+      if (old === 'off' || old === 'on') state.enabled = old === 'on';
+    }
+  } catch (_) {}
+  if (native) state.amoled = nativeChoice() === native.ultra;
+  let lastNativeChoice = nativeChoice();
+  let nativeBusy = false, dialog = null, opener = null;
+  function currentIsLight() {
+    if (state.amoled) return false;
+    const mode = root.getAttribute('data-appearance') || root.getAttribute('data-theme') || '';
+    if (mode === 'light') return true;
+    if (['dark','ultra-dark','ultra'].includes(mode)) return false;
+    if (root.classList.contains('dark')) return false;
+    if (['auto','system'].includes(mode)) return !matchMedia('(prefers-color-scheme: dark)').matches;
+    if (document.body) {
+      const color = getComputedStyle(document.body).backgroundColor;
+      const parts = color.match(/[\d.]+/g);
+      if (parts && parts.length >= 3 && (parts.length < 4 || Number(parts[3]) > .1))
+        return .2126*Number(parts[0]) + .7152*Number(parts[1]) + .0722*Number(parts[2]) > 150;
+    }
+    return !matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function persist() {
+    write(storageKey, JSON.stringify(state));
+    if (app === 'finance') write('finance_liquid_glass_appearance_v1', state.enabled ? 'on' : 'off');
+  }
+  function apply() {
+    root.classList.toggle('ajd-glass-on', state.enabled);
+    root.classList.toggle('ajd-amoled', state.amoled);
+    root.classList.toggle('ajd-glass-light', currentIsLight());
+    root.style.setProperty('--ajd-glass-alpha', String((0.58 + state.level * .0038).toFixed(3)));
+    root.style.setProperty('--ajd-glass-light-alpha', String((0.70 + state.level * .0026).toFixed(3)));
+    root.style.setProperty('--ajd-glass-blur', (14 + state.level * .10).toFixed(1) + 'px');
+    const summary = document.getElementById('ajdAppearanceSummary');
+    if (summary) summary.textContent = 'Glass ' + (state.enabled ? 'on' : 'off') + ' · AMOLED ' + (state.amoled ? 'on' : 'off');
+    if (!dialog) return;
+    dialog.querySelector('#ajdGlassEnabled').checked = state.enabled;
+    const range = dialog.querySelector('#ajdGlassTint');
+    range.value = String(state.level); range.disabled = !state.enabled;
+    range.setAttribute('aria-valuetext', state.level === 0 ? 'Clear' : state.level === 100 ? 'Tinted' : state.level + ' percent tint');
+    dialog.querySelector('#ajdGlassLevel').textContent = state.level === 0 ? 'Clear' : state.level === 100 ? 'Tinted' : state.level + '% tint';
+    dialog.querySelector('#ajdAmoledEnabled').checked = state.amoled;
+    dialog.querySelector('#ajdGlassDemo').classList.toggle('ajd-demo-off', !state.enabled);
+    dialog.querySelector('#ajdAppearanceSaveStatus').textContent = storageWorks ? 'Saved on this browser or device.' : 'This browser could not save the preference; changes apply for this session.';
+  }
+  function syncRepairMode(mode) {
+    const dark = mode === 'dark' || mode === 'ultra-dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.classList.toggle('dark',dark); root.classList.toggle('ultra-dark',mode === 'ultra-dark');
+    root.style.colorScheme = dark ? 'dark' : 'light';
+    if (typeof window.setThemeMode === 'function') window.setThemeMode(mode);
+    else if (window.AJDTools?.theme) window.AJDTools.theme();
+    else if (typeof window.applySharedAppearance === 'function') window.applySharedAppearance();
+    document.querySelectorAll('#themeMode,#themeSelectSetting').forEach(el=>{el.value=mode});
+  }
+  function setNative(mode) {
+    if (!native) return;
+    nativeBusy = true;
+    try {
+      if (app === 'study' && typeof window.setStudyAppearance === 'function') {
+        window.setStudyAppearance(mode); const el=document.querySelector(native.selector); if(el)el.value=mode;
+      } else if (app === 'garage' && window.GarageAppearance) window.GarageAppearance.set(mode);
+      else if (app === 'restaurant' && window.NibbleSpotTheme) window.NibbleSpotTheme.set(mode);
+      else if (app === 'repair') { write(native.key,mode); syncRepairMode(mode); }
+      else {
+        const el=document.querySelector(native.selector);
+        if (el && el.tagName === 'SELECT') { el.value=mode; el.dispatchEvent(new Event('change',{bubbles:true})); }
+        else { write(native.key,mode); root.setAttribute(app==='study'||app==='garage'?'data-appearance':'data-theme',mode); }
+      }
+    } finally { lastNativeChoice=mode; nativeBusy=false; }
+  }
+  function setAmoled(on) {
+    if (on && !state.amoled && native) {
+      const previous=nativeChoice(); state.previous=previous === native.ultra ? native.fallback : previous;
+      setNative(native.ultra);
+    } else if (!on && state.amoled && native) {
+      setNative(state.previous && state.previous !== native.ultra ? state.previous : native.fallback);
+    }
+    state.amoled=on; persist(); apply();
+  }
+  const style = document.createElement('style');
+  style.id = 'ajd-appearance-v2-style';
+  style.textContent = `
+  @media screen {
+    html.ajd-amoled.ajd-amoled,html.ajd-amoled.ajd-amoled body {
+      color-scheme:dark!important;background-color:#000!important;background-image:none!important;
+      --bg:#000!important;--bg-color:#000!important;--page:#000!important;--darkbg:#000!important;
+      --card-bg:#0b0b0d!important;--panel:#0b0b0d!important;--paper:#0b0b0d!important;--surface:#0b0b0d!important;
+      --bg-panel:#0b0b0d!important;--surface-raised:#121216!important;--input-bg:#101014!important;--field:#101014!important;
+      --text:#f4f5f8!important;--text-primary:#f4f5f8!important;--ink:#f4f5f8!important;--text-muted:#b1b6c1!important;
+      --muted:#b1b6c1!important;--text-secondary:#b1b6c1!important;--border:#303036!important;--border-color:#303036!important;--line:#303036!important;
+    }
+    html.ajd-amoled.ajd-amoled body {background:#000!important;color:#f4f5f8}
+    html.ajd-glass-on :is(${surfaces}) {
+      background-color:rgba(19,29,43,.96)!important;
+      background-image:linear-gradient(140deg,rgba(255,255,255,.09),rgba(255,255,255,0) 48%)!important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.18)!important;
+    }
+    html.ajd-glass-on.ajd-glass-light :is(${surfaces}) {
+      background-color:rgba(255,255,255,.97)!important;
+      background-image:linear-gradient(140deg,rgba(255,255,255,.3),rgba(255,255,255,0) 55%)!important;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 28px rgba(32,42,60,.10)!important;
+    }
+    @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+      html.ajd-glass-on :is(${surfaces}) {
+        background-color:rgba(19,29,43,var(--ajd-glass-alpha))!important;
+        -webkit-backdrop-filter:blur(var(--ajd-glass-blur)) saturate(135%)!important;backdrop-filter:blur(var(--ajd-glass-blur)) saturate(135%)!important;
+      }
+      html.ajd-glass-on.ajd-glass-light :is(${surfaces}) {background-color:rgba(255,255,255,var(--ajd-glass-light-alpha))!important}
+    }
+    @media (prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+      html.ajd-glass-on :is(${surfaces}) {background-color:#182331!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+      html.ajd-glass-on.ajd-glass-light :is(${surfaces}) {background-color:#fff!important}
+    }
+    html.ajd-amoled.ajd-amoled.ajd-glass-on :is(${surfaces}) {background-color:rgba(8,8,10,var(--ajd-glass-alpha))!important}
+    @media (prefers-reduced-transparency:reduce),(prefers-contrast:more) {
+      html.ajd-amoled.ajd-amoled.ajd-glass-on :is(${surfaces}) {background-color:#101014!important}
+      .ajd-glass-demo-bar {background:#263444!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+    }
+    .ajd-appearance-access {display:flex;justify-content:flex-end;width:100%;max-width:1200px;margin:8px auto 12px;padding:0 12px;box-sizing:border-box}
+    button.ajd-appearance-trigger {display:inline-flex!important;align-items:center;justify-content:center;gap:7px;width:auto!important;min-width:0!important;min-height:40px!important;padding:9px 13px!important;border:1px solid rgba(135,155,177,.38)!important;border-radius:13px!important;background:rgba(30,43,59,.94)!important;color:#f3f7fc!important;font:700 13px/1.2 system-ui,-apple-system,sans-serif!important;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.13)!important}
+    html.ajd-glass-light button.ajd-appearance-trigger {background:rgba(255,255,255,.94)!important;color:#263746!important;border-color:rgba(70,85,110,.3)!important}
+    button.ajd-appearance-trigger:focus-visible,dialog.ajd-appearance-dialog :focus-visible {outline:3px solid #8dd8eb!important;outline-offset:3px!important}
+    dialog.ajd-appearance-dialog {position:fixed!important;inset:0!important;margin:auto!important;width:min(480px,calc(100vw - 24px))!important;max-width:none!important;max-height:min(90dvh,760px)!important;overflow:auto!important;padding:0!important;border:1px solid #526276!important;border-radius:25px!important;background:#111b29!important;color:#f4f7fb!important;box-shadow:0 24px 80px #0009!important;font:15px/1.45 system-ui,-apple-system,sans-serif!important;z-index:2147483000!important}
+    dialog.ajd-appearance-dialog::backdrop {background:rgba(0,0,0,.72);backdrop-filter:blur(5px)}
+    .ajd-appearance-inner {padding:22px!important;display:grid;gap:16px}
+    .ajd-appearance-head {display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .ajd-appearance-head h2 {margin:0!important;color:#f7f9fc!important;font:800 21px/1.2 system-ui,-apple-system,sans-serif!important}
+    .ajd-appearance-head p,.ajd-appearance-help {margin:5px 0 0!important;color:#b8c5d4!important;font:13px/1.45 system-ui,-apple-system,sans-serif!important}
+    dialog.ajd-appearance-dialog button.ajd-close {display:grid;place-items:center;flex:none;width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;padding:0!important;border:1px solid #526276!important;border-radius:50%!important;background:#28384b!important;color:white!important;font:24px/1 system-ui!important;cursor:pointer}
+    .ajd-appearance-row {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 14px;border:1px solid #35475d;border-radius:16px;background:#1b2a3b}
+    .ajd-appearance-row strong {display:block;color:#f5f8fc;font-size:14px}.ajd-appearance-row small {display:block;color:#b7c4d1;font-size:12px;margin-top:3px}
+    .ajd-appearance-switch {position:relative;display:inline-flex!important;align-items:center;flex:none;width:52px;height:32px;margin:0!important;cursor:pointer}
+    .ajd-appearance-switch input {position:absolute!important;inset:0!important;width:52px!important;height:32px!important;min-height:0!important;margin:0!important;opacity:0;z-index:1;cursor:pointer}
+    .ajd-appearance-track {width:52px;height:32px;border-radius:99px;background:#596573;border:1px solid #8290a0;position:relative}
+    .ajd-appearance-track:after {content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 5px #0006;transition:transform .18s ease}
+    .ajd-appearance-switch input:checked + .ajd-appearance-track {background:#317d76;border-color:#63bfb5}
+    .ajd-appearance-switch input:checked + .ajd-appearance-track:after {transform:translateX(20px)}
+    .ajd-appearance-switch input:focus-visible + .ajd-appearance-track {outline:3px solid #8dd8eb;outline-offset:3px}
+    .ajd-glass-demo {height:190px;position:relative;overflow:hidden;border:1px solid #526276;border-radius:19px;background:#1a2533}
+    .ajd-glass-demo-scroll {height:100%;overflow:auto;padding:15px;overscroll-behavior:contain}
+    .ajd-glass-demo-art {min-height:135px;padding:18px;border-radius:13px;background:radial-gradient(circle at 75% 20%,#a6dfd6 0,transparent 34%),linear-gradient(140deg,#477b9e,#9c7394 55%,#d4a67c);color:#fff;font-weight:800;display:flex;align-items:end}
+    .ajd-glass-demo-copy {padding:14px 4px 56px;color:#d1deea;font-size:13px}
+    .ajd-glass-demo-bar {position:absolute;left:10px;right:10px;bottom:10px;padding:10px 13px;border:1px solid #ffffff52;border-radius:99px;background:rgba(20,32,43,var(--ajd-glass-alpha));color:#fff;box-shadow:inset 0 1px 0 #ffffff35;-webkit-backdrop-filter:blur(var(--ajd-glass-blur)) saturate(130%);backdrop-filter:blur(var(--ajd-glass-blur)) saturate(130%);font-size:13px;font-weight:650}
+    .ajd-demo-off .ajd-glass-demo-bar {background:#263444;-webkit-backdrop-filter:none;backdrop-filter:none}
+    .ajd-appearance-range-head {display:flex;justify-content:space-between;gap:12px;align-items:center;color:#f3f7fc;font-size:14px;font-weight:700}
+    .ajd-appearance-range-head output {color:#b8dfe0;font-size:12px}
+    dialog.ajd-appearance-dialog input[type=range] {appearance:auto!important;-webkit-appearance:auto!important;width:100%!important;min-height:36px!important;height:36px!important;margin:2px 0!important;padding:0!important;border:0!important;background:transparent!important;accent-color:#6dc1bb;cursor:pointer}
+    .ajd-appearance-range-ends {display:flex;justify-content:space-between;color:#b6c2d0;font-size:11px}
+    .ajd-appearance-status {color:#aebdca;font-size:12px;line-height:1.4;margin:0}
+    @media(prefers-reduced-motion:reduce){.ajd-appearance-track:after{transition:none}}
+    @media(forced-colors:active){.ajd-appearance-track{forced-color-adjust:auto;border:2px solid ButtonText}.ajd-appearance-track:after{background:ButtonText}}
+  }
+  @media print {.ajd-appearance-access,button.ajd-appearance-trigger,dialog.ajd-appearance-dialog,#ajdAppearanceSettingsCard {display:none!important}}
+  `;
+  document.head.appendChild(style);
+  apply();
+  function buildDialog() {
+    if (dialog) return;
+    dialog=document.createElement('dialog'); dialog.className='ajd-appearance-dialog'; dialog.id='ajdAppearanceDialog';
+    dialog.setAttribute('aria-labelledby','ajdAppearanceTitle');
+    dialog.innerHTML=`<div class="ajd-appearance-inner">
+      <div class="ajd-appearance-head"><div><h2 id="ajdAppearanceTitle">Liquid Glass</h2><p>Make the look your own.</p></div><button class="ajd-close" type="button" aria-label="Close appearance settings">×</button></div>
+      <div class="ajd-appearance-row"><span><strong>Liquid Glass</strong><small>Translucent navigation and controls</small></span><label class="ajd-appearance-switch"><input id="ajdGlassEnabled" type="checkbox" role="switch" aria-label="Enable Liquid Glass"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
+      <div class="ajd-glass-demo" id="ajdGlassDemo" aria-label="Live Liquid Glass preview"><div class="ajd-glass-demo-scroll" tabindex="0" aria-label="Scroll preview content"><div class="ajd-glass-demo-art">Your apps, your style.</div><div class="ajd-glass-demo-copy">Scroll this preview to see the controls float over the content.</div></div><div class="ajd-glass-demo-bar" aria-hidden="true">☰ &nbsp; ⌕ &nbsp; Search</div></div>
+      <div><div class="ajd-appearance-range-head"><label for="ajdGlassTint">Glass tint</label><output id="ajdGlassLevel" for="ajdGlassTint">50% tint</output></div><input type="range" id="ajdGlassTint" min="0" max="100" step="1" value="50" aria-describedby="ajdGlassDescription"><div class="ajd-appearance-range-ends"><span>Clear</span><span>Tinted</span></div><p class="ajd-appearance-help" id="ajdGlassDescription">Clear is more transparent; tinted adds opacity and contrast.</p></div>
+      <div class="ajd-appearance-row"><span><strong>AMOLED black</strong><small>Use a true black background</small></span><label class="ajd-appearance-switch"><input id="ajdAmoledEnabled" type="checkbox" role="switch" aria-label="Enable AMOLED black"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
+      <p class="ajd-appearance-status" id="ajdAppearanceSaveStatus" role="status"></p>
+    </div>`;
+    document.body.appendChild(dialog);
+    const close=()=>{if(typeof dialog.close==='function')dialog.close();else{dialog.removeAttribute('open');if(opener?.isConnected)opener.focus()}};
+    dialog.querySelector('.ajd-close').addEventListener('click',close);
+    dialog.addEventListener('click',event=>{if(event.target===dialog)close()});
+    dialog.addEventListener('close',()=>{if(opener?.isConnected)opener.focus()});
+    dialog.querySelector('#ajdGlassEnabled').addEventListener('change',event=>{state.enabled=event.target.checked;persist();apply()});
+    dialog.querySelector('#ajdGlassTint').addEventListener('input',event=>{state.level=Number(event.target.value);persist();apply()});
+    dialog.querySelector('#ajdAmoledEnabled').addEventListener('change',event=>setAmoled(event.target.checked));
+    apply();
+  }
+  function openAppearance(event) {
+    opener=event.currentTarget; buildDialog();
+    if (!dialog.open) { if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open',''); }
+    dialog.querySelector('.ajd-close').focus();
+  }
+  function mount() {
+    if (document.getElementById('ajdAppearanceTrigger')) return;
+    const button=document.createElement('button');button.type='button';button.id='ajdAppearanceTrigger';
+    button.className='ajd-appearance-trigger';button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','ajdAppearanceDialog');
+    button.textContent='◈ Liquid Glass & AMOLED';button.addEventListener('click',openAppearance);
+    let mounted=false;
+    if (app === 'finance') {
+      const view=document.getElementById('mainSettingsView');
+      if(view){const card=document.createElement('div');card.id='ajdAppearanceSettingsCard';card.className='settings-card';card.innerHTML='<div class="settings-card-heading"><h3>✨ Liquid Glass &amp; AMOLED</h3><p>Adjust glass transparency or choose a true-black background on this device.</p></div><p class="settings-muted-note" id="ajdAppearanceSummary"></p>';card.appendChild(button);view.prepend(card);mounted=true;}
+    } else if (app === 'break') {
+      const settings=document.getElementById('settings-panel');if(settings){settings.appendChild(button);mounted=true;}
+    } else if (app === 'study') {
+      const setting=document.getElementById('study-appearance-select')?.closest('.setting');if(setting){setting.insertAdjacentElement('afterend',button);mounted=true;}
+    } else if (app === 'hub') {
+      const group=document.getElementById('theme-select')?.closest('.form-group');if(group){group.insertAdjacentElement('afterend',button);mounted=true;}
+    } else if (app === 'download') {
+      const header=document.querySelector('.header-inner');if(header){header.appendChild(button);mounted=true;}
+    } else if (app === 'garage') {
+      const panel=document.getElementById('garageAppearanceSelect')?.closest('section');if(panel){panel.appendChild(button);mounted=true;}
+    } else if (app === 'restaurant') {
+      const settings=document.querySelector('#nibbleSettingsOverlay .nibble-settings-body');if(settings){settings.appendChild(button);mounted=true;}
+    } else if (app === 'fitness') {
+      const settings=document.querySelector('#settings-modal > div');if(settings){settings.insertBefore(button,settings.children[1] || null);mounted=true;}
+    } else if (app === 'repair') {
+      const section=document.getElementById('themeMode')?.closest('section');if(section){section.appendChild(button);mounted=true;}
+    }
+    if(!mounted){const row=document.createElement('div');row.className='ajd-appearance-access no-print';row.appendChild(button);const header=document.querySelector('body > header,.container > header,.wrap > header,main > header,header');if(header)header.insertAdjacentElement('afterend',row);else document.body.prepend(row);}
+    apply();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+  document.addEventListener('change',event=>{
+    if(!native || nativeBusy || !event.target.matches?.(native.selector))return;
+    const value=event.target.value;
+    if(value===native.ultra && !state.amoled){state.previous=lastNativeChoice && lastNativeChoice!==native.ultra ? lastNativeChoice : native.fallback;state.amoled=true;persist();apply()}
+    else if(value!==native.ultra && state.amoled){state.amoled=false;state.previous=value;persist();apply()}
+    lastNativeChoice=value;
+  });
+  if(app==='restaurant')document.addEventListener('click',event=>{
+    const option=event.target.closest?.('.appearance-choice[data-appearance]');if(!option||nativeBusy)return;
+    const value=option.dataset.appearance;
+    if(value===native.ultra&&!state.amoled){state.previous=lastNativeChoice && lastNativeChoice!==native.ultra ? lastNativeChoice : native.fallback;state.amoled=true;persist();apply()}
+    else if(value!==native.ultra&&state.amoled){state.amoled=false;state.previous=value;persist();apply()}
+    lastNativeChoice=value;
+  });
+  window.addEventListener('storage',event=>{
+    if(event.key===storageKey && event.newValue){try{const next=JSON.parse(event.newValue);state={...state,...next,level:Math.max(0,Math.min(100,Number(next.level)||0))};apply()}catch(_){}}
+    if(native && event.key===native.key && !nativeBusy){const mode=event.newValue||native.fallback;state.amoled=mode===native.ultra;lastNativeChoice=mode;if(app==='repair')syncRepairMode(mode);apply()}
+    if(app==='finance' && event.key==='finance_liquid_glass_appearance_v1'){state.enabled=event.newValue!=='off';apply()}
+  });
+  const media=matchMedia('(prefers-color-scheme: dark)');media.addEventListener?.('change',()=>apply());
+  new MutationObserver(()=>{const light=currentIsLight();if(root.classList.contains('ajd-glass-light')!==light)root.classList.toggle('ajd-glass-light',light)}).observe(root,{attributes:true,attributeFilter:['class','data-theme','data-appearance']});
+})();
+</script>
+
 </head>
 
 <body>
