@@ -5,7 +5,7 @@ const GOOGLE_USAGE = new Map();
 const JSON_HEADERS={'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'};
 function json(value,status=200){return new Response(JSON.stringify(value),{status,headers:JSON_HEADERS})}
 function text(v,max=110){return String(v==null?'':v).trim().slice(0,max)}
-function numberIn(v,min,max){const n=Number(v);return Number.isFinite(n)&&n>=min&&n<=max?n:null}
+function numberIn(v,min,max){if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)&&n>=min&&n<=max?n:null}
 function locateKnown(location){
  const key=location.toLowerCase().replace(/\s+/g,' ').trim();
  const choices=[[/hollywood.*(fl|florida)|^hollywood$/,[26.0112,-80.1495]],[/^miami(?:,?\s*(?:fl|florida))?$/,[25.7752,-80.1992]],[/fort lauderdale/,[26.1224,-80.1373]],[/^orlando(?:,?\s*(?:fl|florida))?$/,[28.5384,-81.3789]],[/^new york(?:,?\s*(?:ny|new york))?$|^nyc$/,[40.7128,-74.006]],[/^las vegas(?:,?\s*(?:nv|nevada))?$/,[36.1699,-115.1398]],[/^tampa(?:,?\s*(?:fl|florida))?$/,[27.9506,-82.4572]],[/^atlanta(?:,?\s*(?:ga|georgia))?$/,[33.749,-84.388]],[/^chicago(?:,?\s*(?:il|illinois))?$/,[41.8781,-87.6298]],[/^los angeles(?:,?\s*(?:ca|california))?$/,[34.0522,-118.2437]],[/^san francisco(?:,?\s*(?:ca|california))?$/,[37.7749,-122.4194]],[/^paris/,[48.8566,2.3522]],[/^london/,[51.5072,-.1276]]];
@@ -13,10 +13,12 @@ function locateKnown(location){
 }
 function normalize(s){return text(s,160).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim()}
 function keywords(q){
- const clean=normalize(q).replace(/\b(cheap|affordable|budget|cozy|romantic|fancy|date|night|nice|great|good|best|top|dinner|lunch|breakfast|brunch|food|near|me|please|place|places|restaurant|restaurants|spot|spots|with|for|and|the|a|an|under|over|dollars|usd|\d+)\b/g,' ').replace(/\s+/g,' ').trim();
+ const clean=normalize(q).replace(/\b(cheap|affordable|budget|cozy|romantic|fancy|date|night|nice|great|good|best|top|dinner|lunch|food|near|me|please|place|places|restaurant|restaurants|spot|spots|with|for|and|the|a|an|under|over|dollars|usd|\d+)\b/g,' ').replace(/\s+/g,' ').trim();
  return clean.split(/\s+/).filter(Boolean);
 }
 function matchesQuery(spot,q){
+ if(!q.trim())return true;
+ if(!isGenericCuisine(q)&&nameRelevance(spot.name,q)>0)return true;
  const words=keywords(q);if(!words.length)return true;
  const all=normalize([spot.name,spot.cuisine,spot.tags?.join(' ')].join(' '));
  const aliases={taco:['taco','mexican','tex mex'],tacos:['taco','mexican','tex mex'],pizza:['pizza','italian'],sushi:['sushi','japanese'],ramen:['ramen','japanese'],brunch:['cafe','breakfast','brunch'],coffee:['cafe','coffee'],steak:['steak','steakhouse','grill'],vegan:['vegan','vegetarian'],burger:['burger','american'],burgers:['burger','american'],seafood:['seafood','fish','sushi'],italian:['italian','pizza'],chinese:['chinese'],indian:['indian'],mexican:['mexican','tacos'],bbq:['barbecue','bbq','grill']};
@@ -243,10 +245,12 @@ function nameRelevance(name,query){
  const n=normalize(name),q=normalize(query);
  if(!n||!q)return 0;
  if(n===q)return 120;
- if(n.startsWith(q))return 90;
- if(n.includes(q))return 70;
- const words=q.split(' ').filter(Boolean);
- return words.length&&words.every(w=>n.includes(w))?45:0;
+ if(n.startsWith(q))return 100;
+ if(n.includes(q))return 85;
+ // Compare full name tokens, including words such as “restaurant” or “brunch”.
+ // This tolerates punctuation and word order without treating unrelated places as matches.
+ const words=q.split(' ').filter(Boolean), nameWords=n.split(' ');
+ return words.length>1&&words.every(w=>nameWords.includes(w))?65:0;
 }
 async function restaurantSuggestions(request){
  const u=new URL(request.url),q=text(u.searchParams.get('q'),90);
@@ -288,7 +292,7 @@ const CUISINE_ONLY=/^(?:pizza|sushi|ramen|tacos?|seafood|italian|mexican|japanes
 function isGenericCuisine(q){return CUISINE_ONLY.test(String(q).trim())}
 function escapeOverpassRegex(value){return value.replace(/[.*+?^$\{\}()|[\]\\]/g,'\\$&').slice(0,95)}
 async function namedOverpass(lat,lon,location,q){
- const needle=escapeOverpassRegex(text(q,90));
+ const needle=escapeOverpassRegex(text(q,90)).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
  if(needle.length<3)return [];
  const query='[out:json][timeout:15];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"]["name"~"'+needle+'",i](around:40000,'+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 110;';
  for(const url of fallbackHost){
@@ -346,17 +350,17 @@ async function searchGooglePlaces(env,request,q,location,lat,lon){
 }
 
 async function nearby(lat,lon,location,q=''){
- if(q&&keywords(q).length&&!isGenericCuisine(q)){
-   const direct=await photonRestaurants(lat,lon,location,q);
-   const named=direct.filter(s=>nameRelevance(s.name,q)>0&&withinKm(lat,lon,s.lat,s.lon)<=40);
-   if(named.length)return dedupeAndRank(named,q,lat,lon).slice(0,90);
-   return dedupeAndRank(await namedOverpass(lat,lon,location,q),q,lat,lon).slice(0,90);
+ if(q&&!isGenericCuisine(q)){
+   // Search names in both sources concurrently: Photon often lacks address and
+   // cuisine metadata, while Overpass can find results omitted from Photon.
+   const [direct,named]=await Promise.all([
+     photonRestaurants(lat,lon,location,q),namedOverpass(lat,lon,location,q)
+   ]);
+   return dedupeAndRank([...named,...direct.filter(s=>nameRelevance(s.name,q)>0)],q,lat,lon).slice(0,90);
  }
- if(q&&keywords(q).length){
-   const direct=await photonRestaurants(lat,lon,location,q);
-   const matching=direct.filter(s=>matchesQuery(s,q));
-   if(matching.length)return dedupeAndRank(matching,q,lat,lon).slice(0,90);
- }
+ // Cuisine searches use the detailed nearby listing as well as direct name
+ // matches; stopping at the first Photon hit hid most nearby restaurants.
+ const directPromise=q&&keywords(q).length?photonRestaurants(lat,lon,location,q):Promise.resolve([]);
  const radius=13000;
  const query='[out:json][timeout:18];(nwr["amenity"~"^(restaurant|cafe|fast_food)$"](around:'+radius+','+lat.toFixed(5)+','+lon.toFixed(5)+'););out center 280;';
  let data=null;
@@ -364,8 +368,9 @@ async function nearby(lat,lon,location,q=''){
    try{data=await apiFetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query)},7800);break}
    catch(e){}
  }
- if(data)return dedupeAndRank((data.elements||[]).map(e=>makeSpot(e,location)).filter(Boolean),q,lat,lon).slice(0,280);
- const fallback=await photonRestaurants(lat,lon,location,q);
+ const direct=await directPromise;
+ if(data)return dedupeAndRank([...(data.elements||[]).map(e=>makeSpot(e,location)).filter(Boolean),...direct],q,lat,lon).slice(0,280);
+ const fallback=direct.length?direct:await photonRestaurants(lat,lon,location,q);
  if(!fallback.length)throw Error('Restaurant providers are temporarily busy. Try again soon.');
  return dedupeAndRank(fallback,q,lat,lon).slice(0,90);
 }
@@ -501,7 +506,7 @@ async function restaurantSearch(request,env,isAI){
     return json({location,results:ranked,aiNote,source:'Google Places',googleEnabled:true,
       message:'Found '+ranked.length+' Google Places listings near '+location+'. Open Google Maps for current business information.'});
   }
-  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby-v2?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
+  const cacheKey=new Request('https://restaurant.ajdapp.org/_cache/nearby-v3?lat='+coords[0].toFixed(4)+'&lon='+coords[1].toFixed(4)+'&q='+encodeURIComponent(normalize(q)));
   const cache=caches.default;let spots;
   const hit=await cache.match(cacheKey);
   if(hit){spots=await hit.json()}
