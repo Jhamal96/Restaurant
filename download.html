@@ -87,17 +87,17 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
   function read(key) { try { return localStorage.getItem(key); } catch (_) { storageWorks=false; return null; } }
   function write(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { storageWorks=false; return false; } }
   function nativeChoice() { return native ? (read(native.key) || native.fallback) : null; }
-  let state = {enabled:true,level:50,amoled:nativeChoice() === native?.ultra,previous:native?.fallback || null};
+  let state = {enabled:false,level:8,amoled:nativeChoice() === native?.ultra,previous:native?.fallback || null};
   try {
     const saved = JSON.parse(read(storageKey) || 'null');
     if (saved && typeof saved === 'object') {
-      state.enabled = typeof saved.enabled === 'boolean' ? saved.enabled : true;
-      state.level = Number.isFinite(Number(saved.level)) ? Math.max(0, Math.min(100, Number(saved.level))) : 50;
+      state.enabled = false; // Glass stays off until enabled this session.
+      state.level = Number.isFinite(Number(saved.level)) ? Math.max(0, Math.min(100, Number(saved.level))) : 8;
       state.amoled = typeof saved.amoled === 'boolean' ? saved.amoled : state.amoled;
       state.previous = typeof saved.previous === 'string' ? saved.previous : state.previous;
     } else if (app === 'finance') {
       const old = read('finance_liquid_glass_appearance_v1');
-      if (old === 'off' || old === 'on') state.enabled = old === 'on';
+      if (old === 'off' || old === 'on') state.enabled = false;
     }
   } catch (_) {}
   if (native) state.amoled = nativeChoice() === native.ultra;
@@ -126,9 +126,9 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
     root.classList.toggle('ajd-glass-on', state.enabled);
     root.classList.toggle('ajd-amoled', state.amoled);
     root.classList.toggle('ajd-glass-light', currentIsLight());
-    root.style.setProperty('--ajd-glass-alpha', String((0.58 + state.level * .0038).toFixed(3)));
-    root.style.setProperty('--ajd-glass-light-alpha', String((0.70 + state.level * .0026).toFixed(3)));
-    root.style.setProperty('--ajd-glass-blur', (14 + state.level * .10).toFixed(1) + 'px');
+    root.style.setProperty('--ajd-glass-alpha', String((0.015 + state.level * .0018).toFixed(3)));
+    root.style.setProperty('--ajd-glass-light-alpha', String((0.020 + state.level * .0017).toFixed(3)));
+    root.style.setProperty('--ajd-glass-blur', (state.level * .025).toFixed(1) + 'px');
     const summary = document.getElementById('ajdAppearanceSummary');
     if (summary) summary.textContent = 'Glass ' + (state.enabled ? 'on' : 'off') + ' · AMOLED ' + (state.amoled ? 'on' : 'off');
     if (!dialog) return;
@@ -189,13 +189,13 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
     }
     html.ajd-amoled.ajd-amoled body {background:#000!important;color:#f4f5f8}
     html.ajd-glass-on :is(${surfaces}) {
-      background-color:rgba(19,29,43,.96)!important;
-      background-image:linear-gradient(140deg,rgba(255,255,255,.09),rgba(255,255,255,0) 48%)!important;
+      background-color:rgba(19,29,43,.08)!important;
+      background-image:linear-gradient(140deg,rgba(255,255,255,.045),rgba(255,255,255,0) 48%)!important;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.18)!important;
     }
     html.ajd-glass-on.ajd-glass-light :is(${surfaces}) {
-      background-color:rgba(255,255,255,.97)!important;
-      background-image:linear-gradient(140deg,rgba(255,255,255,.3),rgba(255,255,255,0) 55%)!important;
+      background-color:rgba(255,255,255,.08)!important;
+      background-image:linear-gradient(140deg,rgba(255,255,255,.11),rgba(255,255,255,0) 55%)!important;
       box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 10px 28px rgba(32,42,60,.10)!important;
     }
     @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
@@ -214,6 +214,9 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
       html.ajd-amoled.ajd-amoled.ajd-glass-on :is(${surfaces}) {background-color:#101014!important}
       .ajd-glass-demo-bar {background:#263444!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
     }
+    /* Preserve readable labels over fully transparent surfaces. */
+    html.ajd-glass-on :is(${surfaces}) :is(h1,h2,h3,h4,h5,h6,p,small,strong,label,summary,span,a,button,li) {text-shadow:0 1px 2px rgba(0,0,0,.80),0 0 3px rgba(0,0,0,.38)!important}
+    html.ajd-glass-on.ajd-glass-light :is(${surfaces}) :is(h1,h2,h3,h4,h5,h6,p,small,strong,label,summary,span,a,button,li) {text-shadow:0 1px 1px rgba(255,255,255,.96),0 0 4px rgba(255,255,255,.73)!important}
     .ajd-appearance-access {display:flex;justify-content:flex-end;width:100%;max-width:1200px;margin:8px auto 12px;padding:0 12px;box-sizing:border-box}
     button.ajd-appearance-trigger {display:inline-flex!important;align-items:center;justify-content:center;gap:7px;width:auto!important;min-width:0!important;min-height:40px!important;padding:9px 13px!important;border:1px solid rgba(135,155,177,.38)!important;border-radius:13px!important;background:rgba(30,43,59,.94)!important;color:#f3f7fc!important;font:700 13px/1.2 system-ui,-apple-system,sans-serif!important;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.13)!important}
     html.ajd-glass-light button.ajd-appearance-trigger {background:rgba(255,255,255,.94)!important;color:#263746!important;border-color:rgba(70,85,110,.3)!important}
@@ -260,7 +263,7 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
       <div class="ajd-appearance-head"><div><h2 id="ajdAppearanceTitle">Liquid Glass</h2><p>Make the look your own.</p></div><button class="ajd-close" type="button" aria-label="Close appearance settings">×</button></div>
       <div class="ajd-appearance-row"><span><strong>Liquid Glass</strong><small>Translucent navigation and controls</small></span><label class="ajd-appearance-switch"><input id="ajdGlassEnabled" type="checkbox" role="switch" aria-label="Enable Liquid Glass"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
       <div class="ajd-glass-demo" id="ajdGlassDemo" aria-label="Live Liquid Glass preview"><div class="ajd-glass-demo-scroll" tabindex="0" aria-label="Scroll preview content"><div class="ajd-glass-demo-art">Your apps, your style.</div><div class="ajd-glass-demo-copy">Scroll this preview to see the controls float over the content.</div></div><div class="ajd-glass-demo-bar" aria-hidden="true">☰ &nbsp; ⌕ &nbsp; Search</div></div>
-      <div><div class="ajd-appearance-range-head"><label for="ajdGlassTint">Glass tint</label><output id="ajdGlassLevel" for="ajdGlassTint">50% tint</output></div><input type="range" id="ajdGlassTint" min="0" max="100" step="1" value="50" aria-describedby="ajdGlassDescription"><div class="ajd-appearance-range-ends"><span>Clear</span><span>Tinted</span></div><p class="ajd-appearance-help" id="ajdGlassDescription">Clear is more transparent; tinted adds opacity and contrast.</p></div>
+      <div><div class="ajd-appearance-range-head"><label for="ajdGlassTint">Glass tint</label><output id="ajdGlassLevel" for="ajdGlassTint">8% tint</output></div><input type="range" id="ajdGlassTint" min="0" max="100" step="1" value="8" aria-describedby="ajdGlassDescription"><div class="ajd-appearance-range-ends"><span>Clear</span><span>Tinted</span></div><p class="ajd-appearance-help" id="ajdGlassDescription">Clear is more transparent; tinted adds opacity and contrast.</p></div>
       <div class="ajd-appearance-row"><span><strong>AMOLED black</strong><small>Use a true black background</small></span><label class="ajd-appearance-switch"><input id="ajdAmoledEnabled" type="checkbox" role="switch" aria-label="Enable AMOLED black"><span class="ajd-appearance-track" aria-hidden="true"></span></label></div>
       <p class="ajd-appearance-status" id="ajdAppearanceSaveStatus" role="status"></p>
     </div>`;
@@ -283,7 +286,7 @@ html.ajd-opening-enabled .ajd-opening{position:fixed;inset:0;z-index:2147483647;
     if (document.getElementById('ajdAppearanceTrigger')) return;
     const button=document.createElement('button');button.type='button';button.id='ajdAppearanceTrigger';
     button.className='ajd-appearance-trigger';button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','ajdAppearanceDialog');
-    button.textContent='◈ Liquid Glass & AMOLED';button.addEventListener('click',openAppearance);
+    button.textContent='⚙';button.title='Appearance settings';button.setAttribute('aria-label','Appearance settings: Liquid Glass and AMOLED');button.addEventListener('click',openAppearance);
     let mounted=false;
     if (app === 'finance') {
       const view=document.getElementById('mainSettingsView');
